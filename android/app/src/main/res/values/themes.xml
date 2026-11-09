@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ArkaBot" parent="@android:style/Theme.Material.DayNight.NoActionBar">
+    <!-- The platform has no Theme.Material.DayNight.* variants (DayNight lives
+         in AppCompat/Material Components); day/night is handled by Compose. -->
+    <style name="Theme.ArkaBot" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@android:color/white</item>
