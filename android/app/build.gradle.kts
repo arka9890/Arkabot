@@ -29,6 +29,12 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+
+        // Keep only the ABIs the Rust ffi crate is built for (the JNA AAR also
+        // ships armeabi/mips* libs that no supported device uses).
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+        }
     }
 
     signingConfigs {
@@ -75,8 +81,12 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    // uniffi Kotlin bindings talk to the Rust library through JNA
-    implementation("net.java.dev.jna:jna:5.14.0")
+    // uniffi Kotlin bindings talk to the Rust library through JNA.
+    // Android REQUIRES the @aar artifact: the plain JAR ships no
+    // android-*/libjnidispatch.so and JNA disables classpath unpacking on
+    // Android (jna.nounpack=true), so the JAR fails with UnsatisfiedLinkError
+    // on the first Native.load(). The AAR bundles jni/<abi>/libjnidispatch.so.
+    implementation("net.java.dev.jna:jna:5.14.0@aar")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
 
