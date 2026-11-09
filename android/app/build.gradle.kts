@@ -4,7 +4,9 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-val projectRoot = rootProject.projectDir
+// Repo root: settings.gradle.kts lives in android/, so the Rust workspace
+// (and its scripts/) is one directory above rootProject.projectDir.
+val projectRoot = rootProject.projectDir.parentFile
 
 // Rust core: build the ffi crate for every Android ABI with cargo-ndk and
 // copy the .so files into jniLibs. Also generates the uniffi Kotlin bindings.
