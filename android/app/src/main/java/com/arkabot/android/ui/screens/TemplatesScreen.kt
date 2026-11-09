@@ -18,11 +18,10 @@ import org.json.JSONObject
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplatesScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()) {
-    val templates = remember { mutableStateListOf<JSONObject>() }
-    val vm = viewModel()
+    val templates by viewModel.templates.collectAsState()
 
     LaunchedEffect(Unit) {
-        templates.addAll(vm.quickActions().let { vm.agents.value.let { agents -> if (agents.isEmpty()) emptyList() else listOf(JSONObject()) } }.let { emptyList() })
+        viewModel.refreshTemplates()
     }
 
     Scaffold(
@@ -38,13 +37,82 @@ fun TemplatesScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            Text("Agent templates let you create pre-configured agents quickly.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "Agent templates let you create pre-configured agents quickly.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Spacer(Modifier.height(16.dp))
+
             if (templates.isEmpty()) {
-                Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text("No templates", style = MaterialTheme.typography.titleMedium)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(templates) { template ->
+                        TemplateCard(
+                            template = template,
+                            onUse = { viewModel.createFromTemplate(template) }
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun TemplateCard(template: JSONObject, onUse: () -> Unit) {
+    val name = template.optString("name", "Template")
+    val description = template.optString("description", "")
+    val avatar = template.optString("avatar", "🤖")
+    val model = template.optString("model", "")
+    val provider = template.optString("provider", "simulated")
+    val tags = buildList {
+        val arr = template.optJSONArray("tags")
+        if (arr != null) {
+            for (i in 0 until arr.length()) add(arr.optString(i))
+        }
+    }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(avatar, style = MaterialTheme.typography.headlineSmall)
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    if (description.isNotEmpty()) {
+                        Text(
+                            description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Button(onClick = onUse) { Text("Use") }
+            }
+
+            if (model.isNotEmpty() || provider.isNotEmpty() || tags.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (provider.isNotEmpty()) TagChip(provider)
+                    if (model.isNotEmpty()) TagChip(model)
+                    tags.take(3).forEach { TagChip(it) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TagChip(label: String) {
+    SuggestionChip(
+        onClick = {},
+        label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+    )
 }

@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Channels
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -30,7 +30,7 @@ import org.json.JSONObject
 @Composable
 fun DashboardScreen(
     onOpenChat: (String) -> Unit,
-    onOpenEdit: (String) -> Unit,
+    onOpenEdit: (String?) -> Unit,
     onOpenChannels: () -> Unit,
     onOpenRoutines: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -136,7 +136,7 @@ fun DashboardScreen(
                     .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Channels, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Forum, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Channels (${channels.size})", style = MaterialTheme.typography.bodyLarge)
             }
@@ -168,6 +168,7 @@ private fun QuickActionChip(action: JSONObject, viewModel: ArkaBotViewModel) {
 private fun AgentCard(agent: JSONObject, onClick: () -> Unit, onEdit: () -> Unit) {
     val avatar = agent.optString("avatar", "🤖")
     val color = agent.optString("avatar_color", "#7AA2F7")
+    val avatarColor = parseHexColor(color)
     val name = agent.optString("name", "Unknown")
     val phase = agent.optString("phase", "idle")
     val phaseColor = when (phase) {
@@ -191,7 +192,7 @@ private fun AgentCard(agent: JSONObject, onClick: () -> Unit, onEdit: () -> Unit
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Color.parseColor(color)),
+                    .background(avatarColor),
                 contentAlignment = Alignment.Center
             ) {
                 Text(avatar, style = MaterialTheme.typography.headlineMedium)
@@ -206,4 +207,15 @@ private fun AgentCard(agent: JSONObject, onClick: () -> Unit, onEdit: () -> Unit
             }
         }
     }
+}
+
+/**
+ * `androidx.compose.ui.graphics.Color` has no `parseColor`, so delegate to
+ * `android.graphics.Color` and fall back to the default avatar color when the
+ * stored value is not a valid `#RRGGBB`/`#AARRGGBB` string.
+ */
+private fun parseHexColor(value: String): Color = try {
+    Color(android.graphics.Color.parseColor(value))
+} catch (_: Exception) {
+    Color(0xFF7AA2F7)
 }

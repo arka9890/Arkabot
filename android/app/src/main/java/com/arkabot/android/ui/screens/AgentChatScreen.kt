@@ -20,29 +20,27 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.arkabot.android.data.ArkaBotViewModel
 import org.json.JSONObject
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgentChatScreen(agentId: String, onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()) {
-    val messages by remember { mutableStateOf(viewModel.agentMessages(agentId)) }
-    val agent = remember { viewModel.agents.value.find { it.getString("id") == agentId } }
-    val scaffoldState = rememberScaffoldState()
-    val scope = rememberCoroutineScope()
+    var messages by remember { mutableStateOf<List<JSONObject>>(emptyList()) }
+    var messageInput by remember { mutableStateOf("") }
+    val agents by viewModel.agents.collectAsState()
+    val agentInfo = agents.firstOrNull { it.optString("id") == agentId }
 
     LaunchedEffect(agentId) {
-        // Poll for new messages every 2 seconds
+        // Initial load, then poll for new messages every 2 seconds.
         while (true) {
+            messages = viewModel.loadMessages(agentId)
             kotlinx.coroutines.delay(2000)
-            messages.clear()
-            messages.addAll(viewModel.agentMessages(agentId))
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(agent?.optString("name", "Agent") ?: "Agent") },
+                title = { Text(agentInfo?.optString("name", "Agent") ?: "Agent", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -85,8 +83,9 @@ fun AgentChatScreen(agentId: String, onBack: () -> Unit, viewModel: ArkaBotViewM
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
                     onClick = {
-                        if (messageInput.isNotBlank()) {
-                            viewModel.sendMessage(agentId, messageInput)
+                        val text = messageInput.trim()
+                        if (text.isNotBlank()) {
+                            viewModel.sendMessage(agentId, text)
                             messageInput = ""
                         }
                     },
@@ -102,9 +101,23 @@ fun AgentChatScreen(agentId: String, onBack: () -> Unit, viewModel: ArkaBotViewM
     }
 }
 
+/**
+ * Message rows are serialized by serde as `sender = {"kind":"user"}` /
+ * `{"kind":"agent","agent_id":...}` / `{"kind":"routine",...}`. Older rows may
+ * still be a plain string, so both shapes are accepted.
+ */
+private fun senderKind(msg: JSONObject): String {
+    val sender = msg.optJSONObject("sender")
+    return when {
+        sender != null -> sender.optString("kind", "user")
+        else -> msg.optString("sender", "user")
+    }
+}
+
 @Composable
 private fun MessageBubble(msg: JSONObject) {
-    val isUser = msg.optString("sender", "user") == "user"
+    val kind = senderKind(msg)
+    val isUser = kind == "user"
     val text = msg.optString("text", "")
     val bgColor = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
     val fgColor = if (isUser) Color.White else MaterialTheme.colorScheme.onSurface

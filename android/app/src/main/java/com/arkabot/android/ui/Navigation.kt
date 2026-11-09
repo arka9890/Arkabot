@@ -16,7 +16,8 @@ import com.arkabot.android.ui.screens.TemplatesScreen
 object Routes {
     const val DASHBOARD = "dashboard"
     const val AGENT_CHAT = "agent_chat/{agentId}"
-    const val AGENT_EDIT = "agent_edit/{agentId?}"
+    const val AGENT_EDIT = "agent_edit/{agentId}"
+    const val AGENT_EDIT_NEW = "new" // sentinel: "agent_edit/new" = create mode
     const val CHANNELS = "channels"
     const val ROUTINES = "routines"
     const val SETTINGS = "settings"
@@ -31,7 +32,9 @@ fun ArkaBotNavigation() {
         composable(Routes.DASHBOARD) {
             DashboardScreen(
                 onOpenChat = { agentId -> navController.navigate("agent_chat/$agentId") },
-                onOpenEdit = { agentId -> navController.navigate("agent_edit/$agentId") },
+                onOpenEdit = { agentId ->
+                    navController.navigate("agent_edit/${agentId ?: Routes.AGENT_EDIT_NEW}")
+                },
                 onOpenChannels = { navController.navigate(Routes.CHANNELS) },
                 onOpenRoutines = { navController.navigate(Routes.ROUTINES) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
@@ -43,8 +46,9 @@ fun ArkaBotNavigation() {
             val agentId = it.arguments?.getString("agentId") ?: ""
             AgentChatScreen(agentId = agentId, onBack = { navController.popBackStack() })
         }
-        composable("agent_edit/{agentId?}") {
-            val agentId = it.arguments?.getString("agentId")
+        composable(Routes.AGENT_EDIT) {
+            val raw = it.arguments?.getString("agentId")
+            val agentId = raw?.takeIf { id -> id != Routes.AGENT_EDIT_NEW }
             AgentEditScreen(agentId = agentId, onBack = { navController.popBackStack() })
         }
         composable(Routes.CHANNELS) {

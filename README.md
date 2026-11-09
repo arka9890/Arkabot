@@ -12,14 +12,14 @@ A local-first Android AI agent workspace — a Rust reimplementation of the Arka
 - **Templates** — Pre-configured agent templates for quick setup.
 - **Files** — Workspace file tree, read/write/delete.
 - **Events** — Real-time event feed from the Rust runtime.
-- **Notifications** — Foreground service for agent activity notifications.
+- **Notifications** — System notifications for agent replies, posted from the event stream (no foreground service).
 
 ## Architecture
 
 ```
 Rust Core (workspace crates)
 ├── openbot-core      — domain models, IDs, error types
-├── storage           — SQLite persistence (sled-compatible)
+├── storage           — SQLite persistence (rusqlite, WAL)
 ├── llm               — OpenAI-compatible API client
 ├── agent-engine      — conversation loop, tool execution
 ├── messaging         — channel/message routing
@@ -31,9 +31,8 @@ Rust Core (workspace crates)
 Android App (Kotlin + Compose)
 ├── ArkaBotApplication — creates the Rust runtime
 ├── MainActivity       — Compose navigation host
-├── data/              — Repository + ViewModel
-├── ui/                — Compose screens
-└── notifications/     — AgentNotificationService
+├── data/              — Repository + ViewModel (also posts reply notifications)
+└── ui/                — Compose screens
 ```
 
 ## Provider Configuration
@@ -85,15 +84,7 @@ cd android && ./gradlew assembleRelease
 ## Push to GitHub
 
 ```bash
-# Create a new repository (or use an existing one)
-gh repo create arkabot-android --private --clone
-
-# Or manually:
-git init
-git add .
-git commit -m "Initial commit: ArkaBot Android"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/arkabot-android.git
+git remote add origin https://github.com/arka9890/Arkabot.git
 git push -u origin main
 ```
 
@@ -103,4 +94,4 @@ By default, the app runs in **Demo Mode** with the simulated provider — no API
 
 ## License
 
-MIT
+PolyForm-Noncommercial-1.0.0 (see `license` in the workspace `Cargo.toml`).

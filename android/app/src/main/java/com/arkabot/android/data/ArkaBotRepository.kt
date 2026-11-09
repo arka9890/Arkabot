@@ -35,7 +35,7 @@ class ArkaBotRepository(private val handle: ArkaBotHandle) {
 
     fun listRoutines(): List<JSONObject> = parseArray(handle.listRoutines())
     fun createRoutine(agentId: String, name: String, prompt: String, intervalMinutes: Long): JSONObject =
-        parseObject(handle.createRoutine(agentId, name, prompt, intervalMinutes))
+        parseObject(handle.createRoutine(agentId, name, prompt, intervalMinutes.toULong()))
     fun deleteRoutine(id: String) = handle.deleteRoutine(id)
 
     fun quickActions(): List<JSONObject> = parseArray(handle.quickActions())

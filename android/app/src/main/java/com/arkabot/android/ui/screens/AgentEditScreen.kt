@@ -5,6 +5,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -21,9 +22,14 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
     val isEdit = agentId != null
     var name by remember { mutableStateOf("") }
     var avatar by remember { mutableStateOf("🤖") }
+    var avatarColor by remember { mutableStateOf("#7AA2F7") }
     var instructions by remember { mutableStateOf("") }
     var model by remember { mutableStateOf("") }
     var temperature by remember { mutableStateOf("0.7") }
+    var provider by remember { mutableStateOf("simulated") }
+    var busyMode by remember { mutableStateOf("queue") }
+    var maxToolIterations by remember { mutableStateOf(8) }
+    var compactionMessages by remember { mutableStateOf(60) }
 
     LaunchedEffect(agentId) {
         if (isEdit && agentId != null) {
@@ -31,9 +37,14 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
             if (agent != null) {
                 name = agent.optString("name", "")
                 avatar = agent.optString("avatar", "🤖")
+                avatarColor = agent.optString("avatar_color", "#7AA2F7")
                 instructions = agent.optString("instructions", "")
                 model = agent.optString("model", "")
                 temperature = agent.optDouble("temperature", 0.7).toString()
+                provider = agent.optString("provider", "simulated")
+                busyMode = agent.optString("busy_mode", "queue")
+                maxToolIterations = agent.optInt("max_tool_iterations", 8)
+                compactionMessages = agent.optInt("compaction_messages", 60)
             }
         }
     }
@@ -51,18 +62,26 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
                 },
                 actions = {
                     IconButton(onClick = {
+                        // AgentInput on the Rust side is strict: every field
+                        // (including avatar_color) must be present.
                         val inputJson = org.json.JSONObject().apply {
                             put("name", name)
                             put("avatar", avatar)
+                            put("avatar_color", avatarColor)
                             put("instructions", instructions)
                             put("model", model)
                             put("temperature", temperature.toDoubleOrNull() ?: 0.7)
                             put("description", "")
-                            put("provider", "simulated")
-                            put("max_tool_iterations", 8)
-                            put("compaction_messages", 60)
-                            put("busy_mode", "queue")
-                            put("capabilities", org.json.JSONArray(["chat", "files", "task_queue", "notifications"]))
+                            put("provider", provider)
+                            put("max_tool_iterations", maxToolIterations)
+                            put("compaction_messages", compactionMessages)
+                            put("busy_mode", busyMode)
+                            put("capabilities", org.json.JSONArray().apply {
+                                put("chat")
+                                put("files")
+                                put("task_queue")
+                                put("notifications")
+                            })
                         }.toString()
                         if (isEdit) {
                             viewModel.updateAgent(agentId!!, inputJson)
@@ -101,11 +120,19 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
             )
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
+                value = avatarColor,
+                onValueChange = { avatarColor = it },
+                label = { Text("Avatar color (#RRGGBB)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
                 value = instructions,
                 onValueChange = { instructions = it },
                 label = { Text("Instructions (AGENTS.md)") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Multiline),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 minLines = 4
             )
             Spacer(Modifier.height(8.dp))

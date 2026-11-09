@@ -73,8 +73,12 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    // uniffi Kotlin bindings talk to the Rust library through JNA
+    implementation("net.java.dev.jna:jna:5.14.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
 
-tasks.preBuild.dependsOn("uniffiKotlin")
-tasks.preBuild.dependsOn("rustBuild")
+tasks.named("preBuild") {
+    dependsOn("uniffiKotlin")
+    dependsOn("rustBuild")
+}
