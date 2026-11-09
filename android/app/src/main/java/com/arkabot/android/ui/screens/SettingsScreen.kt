@@ -18,6 +18,7 @@ import com.arkabot.android.data.ArkaBotViewModel
 @Composable
 fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()) {
     val settings by viewModel.settings.collectAsState()
+    val error by viewModel.error.collectAsState()
     var provider by remember { mutableStateOf("simulated") }
     var baseUrl by remember { mutableStateOf("") }
     var apiKey by remember { mutableStateOf("") }
@@ -90,7 +91,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
                     label = { Text("Base URL") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    supportingText = { Text("http://10.0.2.2:11434 (emulator)") }
+                    supportingText = { Text("HP: http://IP-KOMPUTER-ANDA:11434 · Emulator: http://10.0.2.2:11434") }
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
@@ -131,6 +132,15 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
 
             Spacer(Modifier.height(24.dp))
 
+            if (error != null) {
+                Text(
+                    text = "Save gagal: $error",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
             Button(
                 onClick = {
                     val json = org.json.JSONObject().apply {
@@ -143,8 +153,10 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
                         put("busy_mode", "queue")
                         put("demo_mode", demoMode)
                     }.toString()
-                    viewModel.updateSettings(json)
-                    onBack()
+                    viewModel.clearError()
+                    // Navigate back only after the save succeeds; on failure
+                    // the error above stays visible instead of crashing.
+                    viewModel.updateSettings(json) { onBack() }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) { Text("Save Settings") }

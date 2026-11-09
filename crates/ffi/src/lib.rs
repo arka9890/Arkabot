@@ -257,7 +257,18 @@ impl ArkaBotHandle {
 
     pub fn update_settings(&self, settings_json: String) -> FfiResult<String> {
         let settings: AppSettings = serde_json::from_str(&settings_json).map_err(|e| FfiError::Core(e.to_string()))?;
-        Ok(ser(&self.runtime.block_on(self.inner.update_settings(settings))?))
+        // Persist synchronously (local DB write only). The provider health
+        // check is a network call with a 300 s timeout — Kotlin calls this
+        // from the main thread, so running it here froze the UI (blank
+        // screen) whenever the endpoint was unreachable. Run it in the
+        // background instead; `check_provider()` remains available for
+        // an explicit, off-main-thread status refresh.
+        self.inner.engine().update_settings(settings)?;
+        let app = self.inner.clone();
+        self.runtime.spawn(async move {
+            let _ = app.check_provider().await;
+        });
+        Ok(ser(&self.inner.get_settings()?))
     }
 
     pub fn check_provider(&self) -> FfiResult<String> {

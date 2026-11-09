@@ -153,6 +153,10 @@ pub enum ProviderKind {
     /// Local Ollama server (usually http://10.0.2.2:11434 on Android emulator).
     Ollama,
     /// Local LM Studio server.
+    // Kotlin sends "lmstudio" (SettingsScreen FilterChip) and `as_str()`
+    // returns "lmstudio" — snake_case would produce "lm_studio" and break
+    // `serde_json::from_str` in the FFI. Alias keeps old stored data readable.
+    #[serde(rename = "lmstudio", alias = "lm_studio")]
     LmStudio,
     /// Built-in simulated provider for demos without a model server.
     Simulated,

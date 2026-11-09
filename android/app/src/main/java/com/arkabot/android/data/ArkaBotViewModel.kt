@@ -167,12 +167,13 @@ class ArkaBotViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun updateSettings(settingsJson: String): JSONObject {
-        return runBlockingIO {
-            val result = repo.updateSettings(settingsJson)
-            _settings.value = repo.settings()
-            result
-        }
+    fun updateSettings(settingsJson: String, onDone: () -> Unit = {}) = launchIO {
+        // Non-blocking: the Rust FFI call used to run a network health check
+        // with a 300 s timeout on this thread, freezing the UI (blank screen).
+        repo.updateSettings(settingsJson)
+        _settings.value = repo.settings()
+        _providerStatus.value = repo.checkProvider()
+        onDone()
     }
 
     fun runQuickAction(action: JSONObject) {

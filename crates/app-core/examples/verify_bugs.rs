@@ -105,6 +105,51 @@ fn verify_rest(app: &Arc<OpenBot>, rt: &tokio::runtime::Runtime) {
         serde_json::from_str(&stored).unwrap_or_default();
     println!("RESULT 6: read back = {back:?} (Agent = ok, User = bug)");
 
+    // ---- TEST 7: ProviderKind serde exactly as the Kotlin SettingsScreen sends it ----
+    println!("== TEST 7: ProviderKind serde (strings sent by SettingsScreen.kt) ==");
+    for s in ["simulated", "ollama", "lmstudio", "openai-compatible"] {
+        let json = format!("\"{s}\"");
+        let parsed: Result<openbot_core::models::ProviderKind, _> = serde_json::from_str(&json);
+        match parsed {
+            Ok(v) => println!("RESULT 7: \"{s}\" -> ok ({:?}), as_str={:?}", v, v.as_str()),
+            Err(e) => println!("RESULT 7: \"{s}\" -> PARSE FAILED: {e}"),
+        }
+    }
+    // The exact payload SettingsScreen builds (minus unrelated fields).
+    let exact = r#"{"provider":"lmstudio","base_url":"http://10.0.2.2:11434","api_key":"","model":"qwen3","temperature":0.7,"theme":"system","busy_mode":"queue","demo_mode":false}"#;
+    match serde_json::from_str::<openbot_core::models::AppSettings>(exact) {
+        Ok(_) => println!("RESULT 7: full SettingsScreen payload -> ok"),
+        Err(e) => println!("RESULT 7: full SettingsScreen payload -> PARSE FAILED: {e}"),
+    }
+
+    // ---- TEST 8: settings save must not block on the network (FFI path) ----
+    println!("== TEST 8: FFI update_settings path (sync save + background check) ==");
+    let mut blocked_settings = openbot_core::models::AppSettings::default();
+    blocked_settings.provider = openbot_core::models::ProviderKind::Ollama;
+    blocked_settings.base_url = "http://10.255.255.1:11434".into(); // non-routable: hangs until timeout
+    blocked_settings.demo_mode = false;
+    let (tx, rx) = std::sync::mpsc::channel();
+    {
+        // Mirrors the fixed FFI update_settings: sync local save, check spawned.
+        let app2 = app.clone();
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let handle_settings = blocked_settings.clone();
+        std::thread::spawn(move || {
+            let start = std::time::Instant::now();
+            let saved = app2.engine().update_settings(handle_settings);
+            let elapsed = start.elapsed();
+            // Background check, exactly like the FFI spawn (fire and forget).
+            let app3 = app2.clone();
+            rt.spawn(async move { let _ = app3.check_provider().await; });
+            let _ = tx.send(saved.map(|_| elapsed));
+        });
+    }
+    match rx.recv_timeout(std::time::Duration::from_secs(5)) {
+        Ok(Ok(elapsed)) => println!("RESULT 8: save returned in {elapsed:?} — main thread never blocks (OK)"),
+        Ok(Err(e)) => println!("RESULT 8: save error: {e}"),
+        Err(_) => println!("RESULT 8: save STILL RUNNING after 5s — main thread would be frozen (bug confirmed)"),
+    }
+
     // ---- TEST 5: turn status roundtrip ----
     println!("== TEST 5: TurnStatus roundtrip ==");
     let turn = Turn {
