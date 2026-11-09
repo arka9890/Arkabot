@@ -27,8 +27,18 @@ android {
         applicationId = "com.arkabot.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // versionCode must increase on every published build or Android
+        // refuses the update ("app not installed"). CI provides VERSION_CODE
+        // (monotonic per run); local builds fall back to the commit count.
+        versionCode = (System.getenv("VERSION_CODE")?.toIntOrNull()
+            ?: runCatching {
+                val p = ProcessBuilder("git", "rev-list", "--count", "HEAD")
+                    .directory(projectRoot)
+                    .redirectErrorStream(true)
+                    .start()
+                p.inputStream.bufferedReader().readText().trim().toInt()
+            }.getOrDefault(1))
+        versionName = "0.1.$versionCode"
 
         // Keep only the ABIs the Rust ffi crate is built for (the JNA AAR also
         // ships armeabi/mips* libs that no supported device uses).
@@ -38,6 +48,19 @@ android {
     }
 
     signingConfigs {
+        // Fixed debug keystore committed to the repo. Without it every CI run
+        // generates a fresh ~/.android/debug.keystore and the APK signature
+        // changes between builds, so Android refuses to install over the
+        // previous version. With it, each build upgrades in place.
+        // (Sideload/debug distribution only — do not reuse for release keys.)
+        if (file("../keystore/debug.keystore").exists()) {
+            create("debugFixed") {
+                storeFile = file("../keystore/debug.keystore")
+                storePassword = "arkabot-debug"
+                keyAlias = "arkabot"
+                keyPassword = "arkabot-debug"
+            }
+        }
         if (System.getenv("ANDROID_KEYSTORE_FILE")?.isNotEmpty() == true) {
             create("release") {
                 storeFile = file(System.getenv("ANDROID_KEYSTORE_FILE"))
@@ -49,6 +72,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfigs.findByName("debugFixed")?.let { signingConfig = it }
+        }
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.findByName("release")

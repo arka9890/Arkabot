@@ -88,12 +88,18 @@ class ArkaBotViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshQuickActions() = launchIO { _quickActions.value = repo.quickActions() }
     fun refreshTemplates() = launchIO { _templates.value = repo.templates() }
 
-    fun createAgent(inputJson: String): JSONObject {
-        return runBlockingIO { repo.createAgent(inputJson) }
+    fun createAgent(inputJson: String, onDone: (JSONObject) -> Unit = {}) = launchIO {
+        val created = repo.createAgent(inputJson)
+        // Refresh the list: without this the new agent never appears on the
+        // dashboard until a manual refresh.
+        _agents.value = repo.listAgents()
+        onDone(created)
     }
 
-    fun updateAgent(id: String, inputJson: String): JSONObject {
-        return runBlockingIO { repo.updateAgent(id, inputJson) }
+    fun updateAgent(id: String, inputJson: String, onDone: (JSONObject) -> Unit = {}) = launchIO {
+        val updated = repo.updateAgent(id, inputJson)
+        _agents.value = repo.listAgents()
+        onDone(updated)
     }
 
     fun deleteAgent(id: String) {

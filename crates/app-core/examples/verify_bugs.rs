@@ -150,6 +150,21 @@ fn verify_rest(app: &Arc<OpenBot>, rt: &tokio::runtime::Runtime) {
         Err(_) => println!("RESULT 8: save STILL RUNNING after 5s — main thread would be frozen (bug confirmed)"),
     }
 
+    // ---- TEST 9: exact AgentEditScreen create/update payload ----
+    println!("== TEST 9: AgentEditScreen payload (create new agent) ==");
+    let edit_payload = r##"{"name":"Agent Baru","avatar":"🤖","avatar_color":"#7AA2F7","instructions":"","model":"","temperature":0.7,"description":"","provider":"simulated","max_tool_iterations":8,"compaction_messages":60,"busy_mode":"queue","capabilities":["chat","files","task_queue","notifications"]}"##;
+    match serde_json::from_str::<AgentInput>(edit_payload) {
+        Ok(input) => {
+            println!("RESULT 9: AgentInput parse ok ({:?})", input.name);
+            let created = app.create_agent(input);
+            match created {
+                Ok(a) => println!("RESULT 9: create_agent ok -> {}", a.id),
+                Err(e) => println!("RESULT 9: create_agent FAILED: {e}"),
+            }
+        }
+        Err(e) => println!("RESULT 9: AgentInput PARSE FAILED: {e}"),
+    }
+
     // ---- TEST 5: turn status roundtrip ----
     println!("== TEST 5: TurnStatus roundtrip ==");
     let turn = Turn {

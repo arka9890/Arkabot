@@ -52,6 +52,10 @@ jobs:
       - name: Generate Kotlin bindings
         run: bash scripts/gen-kotlin.sh
 
+      - name: Set version code
+        # Monotonic versionCode so Android accepts each build as an upgrade.
+        run: echo "VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
       - name: Build APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon

@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()) {
     val isEdit = agentId != null
+    val error by viewModel.error.collectAsState()
     var name by remember { mutableStateOf("") }
     var avatar by remember { mutableStateOf("🤖") }
     var avatarColor by remember { mutableStateOf("#7AA2F7") }
@@ -83,12 +84,14 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
                                 put("notifications")
                             })
                         }.toString()
+                        viewModel.clearError()
+                        // Non-blocking save; navigate back only on success so
+                        // failures show below instead of crashing/going blank.
                         if (isEdit) {
-                            viewModel.updateAgent(agentId!!, inputJson)
+                            viewModel.updateAgent(agentId!!, inputJson) { onBack() }
                         } else {
-                            viewModel.createAgent(inputJson)
+                            viewModel.createAgent(inputJson) { onBack() }
                         }
-                        onBack()
                     }) {
                         Icon(Icons.Default.Check, contentDescription = "Save")
                     }
@@ -103,6 +106,15 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
                 .padding(16.dp)
                 .verticalScroll(androidx.compose.foundation.rememberScrollState())
         ) {
+            if (error != null) {
+                Text(
+                    text = "Save gagal: $error",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
