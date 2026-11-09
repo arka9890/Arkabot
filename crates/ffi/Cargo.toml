@@ -1,0 +1,21 @@
+[package]
+name = "arkabot-ffi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+openbot-core = { workspace = true }
+app-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+uniffi = { workspace = true }
+
+
+[lib]
+name = "arkabot_ffi"
+crate-type = ["cdylib", "rlib"]

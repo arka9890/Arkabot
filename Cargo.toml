@@ -1,0 +1,61 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/storage",
+    "crates/llm",
+    "crates/agent-engine",
+    "crates/messaging",
+    "crates/browser",
+    "crates/server",
+    "crates/app-core",
+    "crates/ffi",
+    "tools/bindgen",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "PolyForm-Noncommercial-1.0.0"
+repository = "https://github.com/nightly-labs/openbot"
+authors = ["OpenBot-RS contributors"]
+
+[workspace.dependencies]
+# Core
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1"
+
+# Async / network
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+axum = { version = "0.8", features = ["ws"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+futures-util = "0.3"
+tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect", "rustls-tls-webpki-roots"] }
+url = "2"
+
+# Storage
+rusqlite = { version = "0.32", features = ["bundled", "chrono"] }
+
+# FFI
+uniffi = "0.28"
+
+# Local crates
+openbot-core = { path = "crates/core" }
+storage = { path = "crates/storage" }
+llm = { path = "crates/llm" }
+agent-engine = { path = "crates/agent-engine" }
+messaging = { path = "crates/messaging" }
+browser = { path = "crates/browser" }
+server = { path = "crates/server" }
+app-core = { path = "crates/app-core" }
+ffi = { path = "crates/ffi" }

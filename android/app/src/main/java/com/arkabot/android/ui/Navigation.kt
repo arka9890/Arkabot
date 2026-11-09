@@ -1,0 +1,66 @@
+package com.arkabot.android.ui
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.arkabot.android.ui.screens.AgentChatScreen
+import com.arkabot.android.ui.screens.AgentEditScreen
+import com.arkabot.android.ui.screens.ChannelsScreen
+import com.arkabot.android.ui.screens.DashboardScreen
+import com.arkabot.android.ui.screens.EventsScreen
+import com.arkabot.android.ui.screens.RoutinesScreen
+import com.arkabot.android.ui.screens.SettingsScreen
+import com.arkabot.android.ui.screens.TemplatesScreen
+
+object Routes {
+    const val DASHBOARD = "dashboard"
+    const val AGENT_CHAT = "agent_chat/{agentId}"
+    const val AGENT_EDIT = "agent_edit/{agentId?}"
+    const val CHANNELS = "channels"
+    const val ROUTINES = "routines"
+    const val SETTINGS = "settings"
+    const val EVENTS = "events"
+    const val TEMPLATES = "templates"
+}
+
+@Composable
+fun ArkaBotNavigation() {
+    val navController = rememberNavController()
+    NavHost(navController = navController, startDestination = Routes.DASHBOARD) {
+        composable(Routes.DASHBOARD) {
+            DashboardScreen(
+                onOpenChat = { agentId -> navController.navigate("agent_chat/$agentId") },
+                onOpenEdit = { agentId -> navController.navigate("agent_edit/$agentId") },
+                onOpenChannels = { navController.navigate(Routes.CHANNELS) },
+                onOpenRoutines = { navController.navigate(Routes.ROUTINES) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenEvents = { navController.navigate(Routes.EVENTS) },
+                onOpenTemplates = { navController.navigate(Routes.TEMPLATES) },
+            )
+        }
+        composable("agent_chat/{agentId}") {
+            val agentId = it.arguments?.getString("agentId") ?: ""
+            AgentChatScreen(agentId = agentId, onBack = { navController.popBackStack() })
+        }
+        composable("agent_edit/{agentId?}") {
+            val agentId = it.arguments?.getString("agentId")
+            AgentEditScreen(agentId = agentId, onBack = { navController.popBackStack() })
+        }
+        composable(Routes.CHANNELS) {
+            ChannelsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.ROUTINES) {
+            RoutinesScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.EVENTS) {
+            EventsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.TEMPLATES) {
+            TemplatesScreen(onBack = { navController.popBackStack() })
+        }
+    }
+}

@@ -1,0 +1,26 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Android / Gradle
+/android/.gradle/
+/android/local.properties
+/android/build/
+/android/app/build/
+/android/.idea/
+*.iml
+
+# NDK / build outputs
+/crates/ffi/lib/
+*.so
+*.dylib
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# App data (local dev)
+/data/
