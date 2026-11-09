@@ -88,18 +88,33 @@ class ArkaBotViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshQuickActions() = launchIO { _quickActions.value = repo.quickActions() }
     fun refreshTemplates() = launchIO { _templates.value = repo.templates() }
 
-    fun createAgent(inputJson: String, onDone: (JSONObject) -> Unit = {}) = launchIO {
-        val created = repo.createAgent(inputJson)
-        // Refresh the list: without this the new agent never appears on the
-        // dashboard until a manual refresh.
-        _agents.value = repo.listAgents()
-        onDone(created)
+    fun createAgent(inputJson: String, onDone: (JSONObject) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val created = withContext(Dispatchers.IO) { repo.createAgent(inputJson) }
+                // Refresh the list: without this the new agent never appears on
+                // the dashboard until a manual refresh.
+                _agents.value = withContext(Dispatchers.IO) { repo.listAgents() }
+                // Back on the main dispatcher: navigation (onDone) must never
+                // run on Dispatchers.IO ("setCurrentState must be called on
+                // the main thread").
+                onDone(created)
+            } catch (e: Throwable) {
+                _error.value = e.message ?: e.toString()
+            }
+        }
     }
 
-    fun updateAgent(id: String, inputJson: String, onDone: (JSONObject) -> Unit = {}) = launchIO {
-        val updated = repo.updateAgent(id, inputJson)
-        _agents.value = repo.listAgents()
-        onDone(updated)
+    fun updateAgent(id: String, inputJson: String, onDone: (JSONObject) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val updated = withContext(Dispatchers.IO) { repo.updateAgent(id, inputJson) }
+                _agents.value = withContext(Dispatchers.IO) { repo.listAgents() }
+                onDone(updated)
+            } catch (e: Throwable) {
+                _error.value = e.message ?: e.toString()
+            }
+        }
     }
 
     fun deleteAgent(id: String) {
@@ -173,13 +188,23 @@ class ArkaBotViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun updateSettings(settingsJson: String, onDone: () -> Unit = {}) = launchIO {
-        // Non-blocking: the Rust FFI call used to run a network health check
-        // with a 300 s timeout on this thread, freezing the UI (blank screen).
-        repo.updateSettings(settingsJson)
-        _settings.value = repo.settings()
-        _providerStatus.value = repo.checkProvider()
-        onDone()
+    fun updateSettings(settingsJson: String, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                // Non-blocking: the Rust FFI call used to run a network health
+                // check with a 300 s timeout on the main thread, freezing the
+                // UI (blank screen).
+                withContext(Dispatchers.IO) {
+                    repo.updateSettings(settingsJson)
+                    _settings.value = repo.settings()
+                    _providerStatus.value = repo.checkProvider()
+                }
+                // Navigation (onDone) must run on the main dispatcher.
+                onDone()
+            } catch (e: Throwable) {
+                _error.value = e.message ?: e.toString()
+            }
+        }
     }
 
     fun runQuickAction(action: JSONObject) {
