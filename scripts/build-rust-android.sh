@@ -18,6 +18,14 @@ fi
 export ANDROID_NDK_HOME
 export PATH="$HOME/.cargo/bin:$PATH"
 
+# rust-toolchain.toml only provides the host toolchain; the Android targets
+# must be installed explicitly or rustc fails with E0463 ("can't find crate
+# for `core`") on the first cross build.
+for target in aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android; do
+    echo ">> Ensuring rustup target $target..."
+    rustup target add "$target"
+done
+
 for abi in "${ABIS[@]}"; do
     echo ">> Building for $abi..."
     cargo ndk -t "$abi" -o "$JNI_LIBS" build --release -p arkabot-ffi
