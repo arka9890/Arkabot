@@ -60,6 +60,19 @@ class ArkaBotViewModel(app: Application) : AndroidViewModel(app) {
     private val _events = MutableStateFlow<List<EventItem>>(emptyList())
     val events: StateFlow<List<EventItem>> = _events.asStateFlow()
 
+    private val _skills = MutableStateFlow<List<JSONObject>>(emptyList())
+    val skills: StateFlow<List<JSONObject>> = _skills.asStateFlow()
+
+    private val _acpProviders = MutableStateFlow<List<JSONObject>>(emptyList())
+    val acpProviders: StateFlow<List<JSONObject>> = _acpProviders.asStateFlow()
+
+    /** The agent whose installed skills the skills screen edits. */
+    private val _skillAgentId = MutableStateFlow<String?>(null)
+    val skillAgentId: StateFlow<String?> = _skillAgentId.asStateFlow()
+
+    private val _notice = MutableStateFlow<String?>(null)
+    val notice: StateFlow<String?> = _notice.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
@@ -81,6 +94,84 @@ class ArkaBotViewModel(app: Application) : AndroidViewModel(app) {
         launchIO { _templates.value = repo.templates() }
         launchIO { _settings.value = repo.settings() }
         launchIO { _providerStatus.value = repo.checkProvider() }
+        launchIO { _skills.value = repo.listSkills() }
+        launchIO { _acpProviders.value = repo.acpProviders() }
+    }
+
+    // ------- local skills ----------------------------------------------------
+
+    /** Pick the agent whose installed skills the screen edits. */
+    fun selectSkillAgent(agentId: String?) {
+        _skillAgentId.value = agentId
+        refreshSkills()
+    }
+
+    fun refreshSkills() = launchIO {
+        val agentId = _skillAgentId.value
+        _skills.value = if (agentId == null) repo.listSkills() else repo.listSkillsForAgent(agentId)
+    }
+
+    /** Install a library skill for the selected agent. */
+    fun installSkill(skillId: String) = launchIO {
+        val agentId = _skillAgentId.value
+        if (agentId == null) {
+            _error.value = "Pilih agent dulu sebelum memasang skill."
+            return@launchIO
+        }
+        repo.installSkill(agentId, skillId)
+        _notice.value = "Skill \"$skillId\" dipasang."
+        _skills.value = repo.listSkillsForAgent(agentId)
+    }
+
+    /** Remove an installed skill from the selected agent. */
+    fun uninstallSkill(skillId: String) = launchIO {
+        val agentId = _skillAgentId.value
+        if (agentId == null) return@launchIO
+        repo.uninstallSkill(agentId, skillId)
+        _notice.value = "Skill \"$skillId\" dilepas."
+        _skills.value = repo.listSkillsForAgent(agentId)
+    }
+
+    /** Save a skill into the shared library. */
+    fun saveSkill(id: String, content: String, expectedVersion: String?) = launchIO {
+        repo.saveSkill(id, content, expectedVersion)
+        _notice.value = "Skill \"$id\" disimpan."
+        _skills.value = repo.listSkills()
+    }
+
+    fun deleteSkill(id: String) = launchIO {
+        repo.deleteSkill(id)
+        _notice.value = "Skill \"$id\" dihapus."
+        _skills.value = repo.listSkills()
+    }
+
+    // ------- agent import / export -----------------------------------------
+
+    /** Write an agent and its workspace into a zip file. */
+    fun exportAgent(agentId: String, targetDir: String) = launchIO {
+        val result = repo.exportAgent(agentId, targetDir)
+        _notice.value = "Agent diekspor: ${result.optString("path")}"
+    }
+
+    /** Rebuild an agent from a zip file. */
+    fun importAgent(archivePath: String) = launchIO {
+        repo.importAgent(archivePath)
+        _agents.value = repo.listAgents()
+        _notice.value = "Agent diimpor."
+    }
+
+    fun clearNotice() {
+        _notice.value = null
+    }
+
+    /** Hand the WebView bridge to the Rust engine as a browser profile. */
+    fun connectBrowser(name: String, baseUrl: String) = launchIO {
+        repo.connectBrowser(name, baseUrl)
+    }
+
+    /** Show a short message without clearing it right away. */
+    fun logNotice(message: String) {
+        _notice.value = message
     }
 
     fun refreshAgents() = launchIO { _agents.value = repo.listAgents() }

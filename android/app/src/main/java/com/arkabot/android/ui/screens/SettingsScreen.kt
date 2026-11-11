@@ -1,5 +1,6 @@
 package com.arkabot.android.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +26,11 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
     var model by remember { mutableStateOf("") }
     var temperature by remember { mutableStateOf("0.7") }
     var demoMode by remember { mutableStateOf(true) }
+    var acpProvider by remember { mutableStateOf("") }
+    var acpCommand by remember { mutableStateOf("") }
+    var acpArgs by remember { mutableStateOf("") }
+    var acpCwd by remember { mutableStateOf("") }
+    val acpProviders by viewModel.acpProviders.collectAsState()
 
     LaunchedEffect(settings) {
         provider = settings.optString("provider", "simulated")
@@ -33,6 +39,12 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
         model = settings.optString("model", "")
         temperature = settings.optDouble("temperature", 0.7).toString()
         demoMode = settings.optBoolean("demo_mode", true)
+        acpProvider = settings.optString("acp_provider", "")
+        acpCommand = settings.optString("acp_command", "")
+        acpArgs = settings.optJSONArray("acp_args")?.let { arr ->
+            (0 until arr.length()).joinToString("\n") { arr.getString(it) }
+        } ?: ""
+        acpCwd = settings.optString("acp_cwd", "")
     }
 
     Scaffold(
@@ -81,6 +93,83 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
                 onClick = { provider = "openai-compatible" },
                 label = { Text("OpenAI-compatible") }
             )
+            Spacer(Modifier.width(8.dp))
+            FilterChip(
+                selected = provider == "acp",
+                onClick = { provider = "acp" },
+                label = { Text("ACP (CLI lokal)") }
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            if (provider == "acp") {
+                Text("Agent CLI (ACP)", style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.height(4.dp))
+                // The presets name the CLI and its default command; a custom
+                // path is entered below for anything installed elsewhere.
+                Column {
+                    acpProviders.forEach { acp ->
+                        val id = acp.optString("id", "")
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    acpProvider = id
+                                    acpCommand = acp.optString("command", "")
+                                    acpArgs = acp.optJSONArray("args")?.let { arr ->
+                                        (0 until arr.length()).joinToString("\n") { arr.getString(it) }
+                                    } ?: ""
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = acpProvider == id,
+                                onClick = {
+                                    acpProvider = id
+                                    acpCommand = acp.optString("command", "")
+                                    acpArgs = acp.optJSONArray("args")?.let { arr ->
+                                        (0 until arr.length()).joinToString("\n") { arr.getString(it) }
+                                    } ?: ""
+                                }
+                            )
+                            Column(modifier = Modifier.padding(start = 4.dp)) {
+                                Text(acp.optString("name", id), style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    acp.optString("note", ""),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = acpCommand,
+                    onValueChange = { acpCommand = it },
+                    label = { Text("Perintah CLI (path absolut)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    supportingText = { Text("Executable harus ada di perangkat: Termux, proot, atau /data/local/tmp.") }
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = acpArgs,
+                    onValueChange = { acpArgs = it },
+                    label = { Text("Argumen (satu per baris)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = acpCwd,
+                    onValueChange = { acpCwd = it },
+                    label = { Text("Folder kerja") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
 
             Spacer(Modifier.height(16.dp))
 
@@ -152,6 +241,14 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
                         put("theme", "system")
                         put("busy_mode", "queue")
                         put("demo_mode", demoMode)
+                        put("acp_provider", acpProvider)
+                        put("acp_command", acpCommand)
+                        put("acp_args", org.json.JSONArray().apply {
+                            acpArgs.split("\n").map { it.trim() }
+                                .filter { it.isNotEmpty() }
+                                .forEach { put(it) }
+                        })
+                        put("acp_cwd", acpCwd)
                     }.toString()
                     viewModel.clearError()
                     // Navigate back only after the save succeeds; on failure

@@ -36,7 +36,7 @@ impl<'a> AgentRepository<'a> {
     }
 
     fn row_to_agent(row: &rusqlite::Row<'_>) -> rusqlite::Result<Agent> {
-        let capabilities: String = row.get(14)?;
+        let capabilities: String = row.get(15)?;
         Ok(Agent {
             id: AgentId::from_str(row.get::<_, String>(0)?.as_str()).unwrap_or_default(),
             name: row.get(1)?,
@@ -58,23 +58,24 @@ impl<'a> AgentRepository<'a> {
                 .parse::<AgentPhase>()
                 .unwrap_or_default(),
             workspace_root: row.get(13)?,
+            browser_profile: row.get(14)?,
             capabilities: from_json(&capabilities),
-            created_at: row.get(15)?,
-            updated_at: row.get(16)?,
+            created_at: row.get(16)?,
+            updated_at: row.get(17)?,
         })
     }
 
     const COLS: &'static str = "id, name, description, avatar, avatar_color, instructions,
         provider, model, temperature, max_tool_iterations, compaction_messages, busy_mode,
-        phase, workspace_root, capabilities, created_at, updated_at";
+        phase, workspace_root, browser_profile, capabilities, created_at, updated_at";
 
     pub fn create(&self, agent: &Agent) -> Result<()> {
         let conn = self.db.conn();
         conn.execute(
             "INSERT INTO agents (id, name, description, avatar, avatar_color, instructions,
                 provider, model, temperature, max_tool_iterations, compaction_messages, busy_mode,
-                phase, workspace_root, capabilities, created_at, updated_at)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17)",
+                phase, workspace_root, browser_profile, capabilities, created_at, updated_at)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18)",
             params![
                 agent.id.as_str(),
                 agent.name,
@@ -90,6 +91,7 @@ impl<'a> AgentRepository<'a> {
                 agent.busy_mode.as_str(),
                 agent.phase.as_str(),
                 agent.workspace_root,
+                agent.browser_profile,
                 to_json(&agent.capabilities),
                 agent.created_at,
                 agent.updated_at,
@@ -106,7 +108,7 @@ impl<'a> AgentRepository<'a> {
                 "UPDATE agents SET name=?2, description=?3, avatar=?4, avatar_color=?5,
                 instructions=?6, provider=?7, model=?8, temperature=?9, max_tool_iterations=?10,
                 compaction_messages=?11, busy_mode=?12, phase=?13, workspace_root=?14,
-                capabilities=?15, updated_at=?16 WHERE id=?1",
+                browser_profile=?15, capabilities=?16, updated_at=?17 WHERE id=?1",
                 params![
                     agent.id.as_str(),
                     agent.name,
@@ -122,6 +124,7 @@ impl<'a> AgentRepository<'a> {
                     agent.busy_mode.as_str(),
                     agent.phase.as_str(),
                     agent.workspace_root,
+                    agent.browser_profile,
                     to_json(&agent.capabilities),
                     agent.updated_at,
                 ],

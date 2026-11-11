@@ -316,6 +316,76 @@ impl ArkaBotHandle {
         Ok("{\"ok\":true}".into())
     }
 
+    // ------- agent import / export -----------------------------------------
+
+    pub fn export_agent(&self, agent_id: String, target_dir: String) -> FfiResult<String> {
+        Ok(ser(&json!({
+            "path": self.inner.export_agent(&parse_id(&agent_id)?, &target_dir)?,
+        })))
+    }
+
+    pub fn import_agent(&self, archive_path: String) -> FfiResult<String> {
+        Ok(ser(&self.inner.import_agent(&archive_path)?))
+    }
+
+    // ------- browsers -------------------------------------------------------
+
+    /// Connect the app's WebView bridge to the Rust engine.
+    ///
+    /// `name` empty registers the shared default browser; a name registers
+    /// a profile only the agents naming it can drive.
+    pub fn connect_browser(&self, name: String, base_url: String) -> FfiResult<String> {
+        self.runtime.block_on(self.inner.connect_browser(&name, &base_url))?;
+        Ok("{\"ok\":true}".into())
+    }
+
+    // ------- ACP providers --------------------------------------------------
+
+    pub fn acp_providers(&self) -> FfiResult<String> {
+        Ok(ser(&self.inner.acp_providers()))
+    }
+
+    // ------- local skills ---------------------------------------------------
+
+    pub fn list_skills(&self) -> FfiResult<String> {
+        Ok(ser(&self.inner.list_skills()?))
+    }
+
+    pub fn list_skills_for_agent(&self, agent_id: String) -> FfiResult<String> {
+        Ok(ser(&self.inner.list_skills_for_agent(&parse_id(&agent_id)?)?))
+    }
+
+    pub fn agent_skills(&self, agent_id: String) -> FfiResult<String> {
+        Ok(ser(&self.inner.agent_skills(&parse_id(&agent_id)?)?))
+    }
+
+    pub fn read_skill(&self, id: String) -> FfiResult<String> {
+        Ok(ser(&json!({ "content": self.inner.read_skill(&id)? })))
+    }
+
+    pub fn save_skill(
+        &self,
+        id: String,
+        content: String,
+        expected_version: Option<String>,
+    ) -> FfiResult<String> {
+        Ok(ser(&self.inner.save_skill(&id, &content, expected_version.as_deref())?))
+    }
+
+    pub fn delete_skill(&self, id: String) -> FfiResult<String> {
+        self.inner.delete_skill(&id)?;
+        Ok("{\"ok\":true}".into())
+    }
+
+    pub fn install_skill(&self, agent_id: String, skill_id: String) -> FfiResult<String> {
+        Ok(ser(&self.inner.install_skill(&parse_id(&agent_id)?, &skill_id)?))
+    }
+
+    pub fn uninstall_skill(&self, agent_id: String, skill_id: String) -> FfiResult<String> {
+        self.inner.uninstall_skill(&parse_id(&agent_id)?, &skill_id)?;
+        Ok("{\"ok\":true}".into())
+    }
+
     // ------- search / data --------------------------------------------------
 
     pub fn search(&self, query: String) -> FfiResult<String> {

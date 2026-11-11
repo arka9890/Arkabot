@@ -74,7 +74,7 @@ impl_from_str!(BusyMessageMode, BusyMessageMode::Queue, {
 
 impl_from_str!(ProviderKind, ProviderKind::Simulated, {
     OpenaiCompatible => "openai-compatible", Ollama => "ollama",
-    LmStudio => "lmstudio", Simulated => "simulated",
+    LmStudio => "lmstudio", Simulated => "simulated", Acp => "acp",
 });
 
 impl_from_str!(QueueStatus, QueueStatus::Queued, {
@@ -160,6 +160,9 @@ pub enum ProviderKind {
     LmStudio,
     /// Built-in simulated provider for demos without a model server.
     Simulated,
+    /// A local agent CLI that speaks the Agent Client Protocol (ACP).
+    #[serde(rename = "acp")]
+    Acp,
 }
 
 impl ProviderKind {
@@ -169,6 +172,7 @@ impl ProviderKind {
             ProviderKind::Ollama => "ollama",
             ProviderKind::LmStudio => "lmstudio",
             ProviderKind::Simulated => "simulated",
+            ProviderKind::Acp => "acp",
         }
     }
 }
@@ -200,6 +204,10 @@ pub struct Agent {
     pub phase: AgentPhase,
     /// Relative path of the agent's workspace inside the data directory.
     pub workspace_root: String,
+    /// Named browser profile this agent drives. Empty means the shared
+    /// default browser; a named profile that is not registered gives the
+    /// agent no browser at all, so two agents never share a session.
+    pub browser_profile: String,
     pub capabilities: Vec<Capability>,
     pub created_at: Timestamp,
     pub updated_at: Timestamp,
@@ -518,6 +526,14 @@ pub struct AppSettings {
     pub busy_mode: BusyMessageMode,
     /// Simulated provider mode: true lets agents answer without a model server.
     pub demo_mode: bool,
+    /// The ACP agent preset the user picked (see `acp::providers`).
+    pub acp_provider: String,
+    /// The ACP agent executable. Empty means no ACP provider is configured.
+    pub acp_command: String,
+    /// Arguments for the ACP agent, one per line.
+    pub acp_args: Vec<String>,
+    /// Working directory the ACP agent runs in.
+    pub acp_cwd: String,
 }
 
 impl Default for AppSettings {
@@ -532,6 +548,10 @@ impl Default for AppSettings {
             busy_mode: BusyMessageMode::Queue,
             // First launch runs in demo mode, no server required.
             demo_mode: true,
+            acp_provider: String::new(),
+            acp_command: String::new(),
+            acp_args: Vec::new(),
+            acp_cwd: String::new(),
         }
     }
 }
@@ -557,6 +577,30 @@ pub struct AgentTemplate {
     pub model: String,
     pub tags: Vec<String>,
     pub builtin: bool,
+}
+
+// ---------------------------------------------------------------------------
+// Local skills
+// ---------------------------------------------------------------------------
+
+/// A reusable workflow packaged as a `SKILL.md` folder.
+///
+/// Mirrors OpenBot's local skill library: skills live in one shared library
+/// and each agent installs a copy into its own workspace.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Skill {
+    /// Folder name inside the library; unique, `[a-z0-9._-]`.
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    /// Revision the agent read. A revise must quote it, so a concurrent
+    /// edit is rejected instead of silently overwritten.
+    pub version: String,
+    /// The `SKILL.md` body without its frontmatter.
+    pub body: String,
+    /// True when the skill is installed for the queried agent.
+    pub installed: bool,
+    pub updated_at: Timestamp,
 }
 
 // ---------------------------------------------------------------------------

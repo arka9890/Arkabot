@@ -188,7 +188,7 @@ pub async fn execute_tool(
         }
         "browser_navigate" => {
             let url = args.get("url").and_then(|v| v.as_str()).unwrap_or("about:blank");
-            let Some(browser) = engine.browser_control() else {
+            let Some(browser) = engine.browser_for(agent) else {
                 return Ok(json!({ "ok": false, "error": "browser unavailable" }).to_string());
             };
             match browser.navigate(url).await {
@@ -198,7 +198,7 @@ pub async fn execute_tool(
         }
         "browser_evaluate" => {
             let expr = args.get("expression").and_then(|v| v.as_str()).unwrap_or("");
-            let Some(browser) = engine.browser_control() else {
+            let Some(browser) = engine.browser_for(agent) else {
                 return Ok(json!({ "ok": false, "error": "browser unavailable" }).to_string());
             };
             match browser.evaluate(expr).await {
@@ -207,7 +207,7 @@ pub async fn execute_tool(
             }
         }
         "browser_screenshot" => {
-            let Some(browser) = engine.browser_control() else {
+            let Some(browser) = engine.browser_for(agent) else {
                 return Ok(json!({ "ok": false, "error": "browser unavailable" }).to_string());
             };
             match browser.screenshot().await {

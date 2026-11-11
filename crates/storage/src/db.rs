@@ -46,6 +46,9 @@ impl Db {
         let conn = self.conn.lock().map_err(|e| Error::Storage(format!("lock: {e}")))?;
         conn.execute_batch(SCHEMA)
             .map_err(|e| Error::Storage(format!("migrate: {e}")))?;
+        // `CREATE TABLE IF NOT EXISTS` leaves an existing table alone, so a
+        // database written before a column existed needs it added.
+        add_column_if_missing(&conn, "agents", "browser_profile", "TEXT NOT NULL DEFAULT ''")?;
         Ok(())
     }
 
@@ -54,8 +57,39 @@ impl Db {
     }
 }
 
-const SCHEMA: &str = r#"
-CREATE TABLE IF NOT EXISTS agents (
+/// Add a column when the table exists but the column does not.
+fn add_column_if_missing(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    definition: &str,
+) -> Result<()> {
+    let mut stmt = conn
+        .prepare(&format!("PRAGMA table_info({table})"))
+        .map_err(|e| Error::Storage(format!("table_info {table}: {e}")))?;
+    let mut rows = stmt
+        .query([])
+        .map_err(|e| Error::Storage(format!("table_info {table}: {e}")))?;
+    while let Some(row) = rows
+        .next()
+        .map_err(|e| Error::Storage(format!("table_info {table}: {e}")))?
+    {
+        let name: String = row
+            .get(1)
+            .map_err(|e| Error::Storage(format!("table_info {table}: {e}")))?;
+        if name == column {
+            return Ok(());
+        }
+    }
+    conn.execute(
+        &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
+        [],
+    )
+    .map_err(|e| Error::Storage(format!("add column {table}.{column}: {e}")))?;
+    Ok(())
+}
+
+const SCHEMA: &str = r#"CREATE TABLE IF NOT EXISTS agents (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
@@ -70,6 +104,7 @@ CREATE TABLE IF NOT EXISTS agents (
     busy_mode TEXT NOT NULL DEFAULT 'queue',
     phase TEXT NOT NULL DEFAULT 'idle',
     workspace_root TEXT NOT NULL DEFAULT '',
+    browser_profile TEXT NOT NULL DEFAULT '',
     capabilities TEXT NOT NULL DEFAULT '[]',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL

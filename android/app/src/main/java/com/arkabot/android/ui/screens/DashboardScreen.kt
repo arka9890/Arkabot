@@ -10,8 +10,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -36,6 +38,8 @@ fun DashboardScreen(
     onOpenSettings: () -> Unit,
     onOpenEvents: () -> Unit,
     onOpenTemplates: () -> Unit,
+    onOpenSkills: () -> Unit,
+    onOpenBrowser: () -> Unit,
     viewModel: ArkaBotViewModel = viewModel()
 ) {
     val agents by viewModel.agents.collectAsState()
@@ -139,6 +143,30 @@ fun DashboardScreen(
                 Icon(Icons.Default.Forum, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Channels (${channels.size})", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenSkills() }
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Extension, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Skills", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenBrowser() }
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Browser", style = MaterialTheme.typography.bodyLarge)
             }
         }
     }

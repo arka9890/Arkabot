@@ -42,8 +42,10 @@ android {
 
         // Keep only the ABIs the Rust ffi crate is built for (the JNA AAR also
         // ships armeabi/mips* libs that no supported device uses).
+        // 64-bit only: Google Play has required 64-bit since 2019, and the
+        // 32-bit NDK targets cannot be cross-built on an aarch64 host.
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+            abiFilters += listOf("arm64-v8a", "x86_64")
         }
     }
 
@@ -89,7 +91,8 @@ android {
     buildFeatures { compose = true }
 
     sourceSets["main"].kotlin.srcDir("src/main/rust")
-    sourceSets["main"].jniLibs.srcDir("src/main/jniLibs")
+    // Use the project's own file tree so Gradle packages the .so into the APK.
+    sourceSets["main"].jniLibs.srcDir(project.file("src/main/jniLibs"))
 
     ndkVersion = "27.0.12077973"
 }

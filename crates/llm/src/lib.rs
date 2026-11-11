@@ -153,13 +153,19 @@ pub struct ChatResponse {
 // Providers
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProviderConfig {
     pub base_url: String,
     pub api_key: String,
     pub model: String,
     pub temperature: f32,
     pub max_tokens: Option<u32>,
+    /// The ACP agent executable. Empty means this is not an ACP provider.
+    pub acp_command: String,
+    /// Arguments for the ACP agent executable.
+    pub acp_args: Vec<String>,
+    /// Working directory the ACP agent runs in.
+    pub acp_cwd: String,
 }
 
 impl ProviderConfig {
@@ -170,11 +176,17 @@ impl ProviderConfig {
             model: "simulated".to_string(),
             temperature: 0.7,
             max_tokens: None,
+            ..Default::default()
         }
     }
 
     pub fn endpoint(&self) -> String {
         format!("{}/chat/completions", self.base_url.trim_end_matches('/'))
+    }
+
+    /// True when this config points at a local ACP agent.
+    pub fn is_acp(&self) -> bool {
+        !self.acp_command.trim().is_empty()
     }
 }
 
@@ -388,12 +400,119 @@ impl LlmClient for SimulatedClient {
 }
 
 // ---------------------------------------------------------------------------
+// ACP provider
+// ---------------------------------------------------------------------------
+
+/// Drives a local agent CLI that speaks the Agent Client Protocol.
+///
+/// The CLI keeps the conversation; the app sends the user's message and
+/// receives the agent's reply. The agent runs its own tools, so this client
+/// never returns tool calls to the local agent loop.
+pub struct AcpLlmClient {
+    command: String,
+    args: Vec<String>,
+    cwd: Option<std::path::PathBuf>,
+    /// The running agent and its session, started on the first turn.
+    state: tokio::sync::Mutex<Option<AcpSession>>,
+}
+
+/// A started ACP agent and the session open on it.
+struct AcpSession {
+    client: acp::AcpClient,
+    session_id: String,
+}
+
+impl AcpLlmClient {
+    pub fn new(config: &ProviderConfig) -> Self {
+        Self {
+            command: config.acp_command.clone(),
+            args: config.acp_args.clone(),
+            cwd: if config.acp_cwd.trim().is_empty() {
+                None
+            } else {
+                Some(std::path::PathBuf::from(&config.acp_cwd))
+            },
+            state: tokio::sync::Mutex::new(None),
+        }
+    }
+
+    /// The last user message of a request.
+    fn last_user_message(req: &ChatRequest) -> String {
+        req.messages
+            .iter()
+            .rev()
+            .find(|m| m.role == ChatRole::User)
+            .map(|m| m.content.clone())
+            .unwrap_or_default()
+    }
+}
+
+#[async_trait::async_trait]
+impl LlmClient for AcpLlmClient {
+    fn model(&self) -> String {
+        self.command.clone()
+    }
+
+    fn base_url(&self) -> String {
+        "acp".into()
+    }
+
+    async fn chat(&self, req: &ChatRequest) -> Result<ChatResponse> {
+        let text = Self::last_user_message(req);
+        let mut state = self.state.lock().await;
+        if state.is_none() {
+            let mut client = acp::AcpClient::start(
+                &self.command,
+                &self.args,
+                self.cwd.as_ref(),
+                acp::ClientHandlers::allow_all(),
+            )
+            .await
+            .map_err(|e| Error::Provider(format!("acp: {e}")))?;
+            client
+                .initialize()
+                .await
+                .map_err(|e| Error::Provider(format!("acp initialize: {e}")))?;
+            let cwd = self
+                .cwd
+                .as_ref()
+                .map(|p| p.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "/".to_string());
+            let session_id = client
+                .new_session(&cwd)
+                .await
+                .map_err(|e| Error::Provider(format!("acp session: {e}")))?;
+            *state = Some(AcpSession { client, session_id });
+        }
+        let session = state.as_mut().expect("session just created");
+        let outcome = session
+            .client
+            .prompt(&session.session_id, &text)
+            .await
+            .map_err(|e| Error::Provider(format!("acp prompt: {e}")))?;
+        let content = if outcome.text.is_empty() {
+            outcome.thought
+        } else {
+            outcome.text
+        };
+        Ok(ChatResponse {
+            content,
+            tool_calls: Vec::new(),
+            finish_reason: outcome.stop_reason,
+            usage: None,
+        })
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Client factory
 // ---------------------------------------------------------------------------
 
 /// Maps a provider config to a concrete client.
 pub fn build_client(config: &ProviderConfig) -> Box<dyn LlmClient> {
-    if config.base_url == "simulated" || config.base_url.is_empty() {
+    if config.is_acp() {
+        Box::new(AcpLlmClient::new(config))
+    } else if config.base_url == "simulated" || config.base_url.is_empty() {
         Box::new(SimulatedClient::new())
     } else {
         Box::new(OpenAiClient::new(config.clone()))

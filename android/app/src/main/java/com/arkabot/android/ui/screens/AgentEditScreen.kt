@@ -31,6 +31,7 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
     var busyMode by remember { mutableStateOf("queue") }
     var maxToolIterations by remember { mutableStateOf(8) }
     var compactionMessages by remember { mutableStateOf(60) }
+    var browserProfile by remember { mutableStateOf("") }
 
     LaunchedEffect(agentId) {
         if (isEdit && agentId != null) {
@@ -46,6 +47,7 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
                 busyMode = agent.optString("busy_mode", "queue")
                 maxToolIterations = agent.optInt("max_tool_iterations", 8)
                 compactionMessages = agent.optInt("compaction_messages", 60)
+                browserProfile = agent.optString("browser_profile", "")
             }
         }
     }
@@ -77,6 +79,7 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
                             put("max_tool_iterations", maxToolIterations)
                             put("compaction_messages", compactionMessages)
                             put("busy_mode", busyMode)
+                            put("browser_profile", browserProfile)
                             put("capabilities", org.json.JSONArray().apply {
                                 put("chat")
                                 put("files")
@@ -164,6 +167,42 @@ fun AgentEditScreen(agentId: String?, onBack: () -> Unit, viewModel: ArkaBotView
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true
             )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = browserProfile,
+                onValueChange = { browserProfile = it },
+                label = { Text("Profil browser (opsional)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                supportingText = { Text("Kosong = browser bersama. Nama lain = sesi terpisah untuk agent ini.") }
+            )
+
+            if (isEdit) {
+                Spacer(Modifier.height(16.dp))
+                Text("Bagikan", fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Row {
+                    OutlinedButton(onClick = {
+                        viewModel.exportAgent(agentId!!, android.os.Environment.getExternalStorageDirectory()?.absolutePath + "/Download")
+                    }) { Text("Ekspor (.zip)") }
+                    Spacer(Modifier.width(8.dp))
+                    OutlinedButton(onClick = {
+                        viewModel.importAgent(
+                            android.os.Environment.getExternalStorageDirectory()?.absolutePath +
+                                "/Download/${agentId}.zip"
+                        )
+                    }) { Text("Impor (.zip)") }
+                }
+                Spacer(Modifier.height(8.dp))
+                val notice by viewModel.notice.collectAsState()
+                if (notice != null) {
+                    Text(
+                        notice!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
     }
 }

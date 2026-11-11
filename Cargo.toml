@@ -10,6 +10,7 @@ members = [
     "crates/server",
     "crates/app-core",
     "crates/ffi",
+    "crates/acp",
     "tools/bindgen",
 ]
 
@@ -59,3 +60,4 @@ browser = { path = "crates/browser" }
 server = { path = "crates/server" }
 app-core = { path = "crates/app-core" }
 ffi = { path = "crates/ffi" }
+acp = { path = "crates/acp" }

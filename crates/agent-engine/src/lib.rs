@@ -44,6 +44,10 @@ struct EngineInner {
     locks: std::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>,
     messaging: RwLock<Option<Arc<dyn MessageSender>>>,
     browser: RwLock<Option<Arc<dyn BrowserControl>>>,
+    /// Named browser profiles. An agent with `browser_profile` set drives
+    /// the profile of that name; a name that is not registered gives the
+    /// agent no browser, so two agents never share one session.
+    browser_profiles: RwLock<HashMap<String, Arc<dyn BrowserControl>>>,
     /// Queue pause flags, persisted in settings KV.
     paused: std::sync::Mutex<HashMap<String, bool>>,
     /// Buffer of the currently running turn, for steer mode.
@@ -66,6 +70,9 @@ impl AgentEngine {
             model: settings.model.clone(),
             temperature: settings.temperature,
             max_tokens: None,
+            acp_command: settings.acp_command.clone(),
+            acp_args: settings.acp_args.clone(),
+            acp_cwd: settings.acp_cwd.clone(),
         });
         let client = Arc::new(client);
         let inner = EngineInner {
@@ -77,6 +84,7 @@ impl AgentEngine {
             locks: Mutex::new(HashMap::new()),
             messaging: RwLock::new(None),
             browser: RwLock::new(None),
+            browser_profiles: RwLock::new(HashMap::new()),
             paused: Mutex::new(HashMap::new()),
             turn_buffers: Mutex::new(HashMap::new()),
         };
@@ -112,6 +120,30 @@ impl AgentEngine {
 
     pub fn set_browser(&self, browser: Arc<dyn BrowserControl>) {
         *self.inner.browser.write().unwrap() = Some(browser);
+    }
+
+    /// Register a named browser profile (one WebView or Chrome instance).
+    pub fn set_browser_profile(&self, name: &str, browser: Arc<dyn BrowserControl>) {
+        self.inner
+            .browser_profiles
+            .write()
+            .unwrap()
+            .insert(name.to_string(), browser);
+    }
+
+    /// The browser an agent drives: its named profile when it has one,
+    /// otherwise the shared default.
+    pub fn browser_for(&self, agent: &Agent) -> Option<Arc<dyn BrowserControl>> {
+        if !agent.browser_profile.is_empty() {
+            return self
+                .inner
+                .browser_profiles
+                .read()
+                .unwrap()
+                .get(&agent.browser_profile)
+                .cloned();
+        }
+        self.inner.browser.read().unwrap().clone()
     }
 
     pub fn messaging_sender(&self) -> Option<Arc<dyn MessageSender>> {
@@ -163,6 +195,9 @@ impl AgentEngine {
             model: settings.model.clone(),
             temperature: settings.temperature,
             max_tokens: None,
+            acp_command: settings.acp_command.clone(),
+            acp_args: settings.acp_args.clone(),
+            acp_cwd: settings.acp_cwd.clone(),
         });
         *self.inner.llm.write().unwrap() = Arc::new(client);
         self.emit(
@@ -340,7 +375,7 @@ impl AgentEngine {
         }
 
         // 3. Tool loop.
-        let tools = tools::tool_definitions(agent, self.browser_control().is_some());
+        let tools = tools::tool_definitions(agent, self.browser_for(agent).is_some());
         let mut reply_text = String::new();
         let mut last_error = None;
 
@@ -461,7 +496,7 @@ impl AgentEngine {
             })
             .unwrap_or_default();
 
-        let tools_hint = if self.browser_control().is_some() {
+        let tools_hint = if self.browser_for(agent).is_some() {
             "Anda memiliki akses ke browser terkontrol (browser_navigate, browser_evaluate, browser_screenshot)."
         } else {
             "Browser tidak tersedia di perangkat ini."

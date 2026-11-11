@@ -163,6 +163,103 @@ impl BrowserControl for CdpBrowser {
 }
 
 // ---------------------------------------------------------------------------
+// Local HTTP protocol (Android WebView bridge)
+// ---------------------------------------------------------------------------
+
+/// Drives the app's own WebView over a loopback HTTP server.
+///
+/// The app runs a tiny HTTP server that forwards each request to its
+/// WebView. The request body is the same JSON the WebSocket bridge uses,
+/// so one command shape covers both transports:
+///
+/// ```text
+/// POST / → {"id":1,"method":"navigate","params":{"url":"…"}}
+///        → {"id":1,"ok":true,"output":"…"}
+/// ```
+pub struct HttpBrowser {
+    base: String,
+    next_id: AtomicU64,
+}
+
+impl HttpBrowser {
+    /// Connect to a bridge listening on `base` (e.g. `http://127.0.0.1:8099`).
+    pub fn new(base: &str) -> Self {
+        Self {
+            base: base.trim_end_matches('/').to_string(),
+            next_id: AtomicU64::new(1),
+        }
+    }
+
+    async fn call(&self, method: &str, params: Value) -> Result<String> {
+        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let body = json!({ "id": id, "method": method, "params": params }).to_string();
+        let response = http_post(&self.base, &body).await?;
+        let value: Value = serde_json::from_str(&response)
+            .map_err(|e| Error::Browser(format!("json: {e}")))?;
+        if !value.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+            let err = value
+                .get("error")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown error");
+            return Err(Error::Browser(err.to_string()));
+        }
+        Ok(value
+            .get("output")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string())
+    }
+}
+
+/// POST a body to a loopback HTTP server and read the whole response.
+async fn http_post(base: &str, body: &str) -> Result<String> {
+    let host = url::Url::parse(base).map_err(|e| Error::Browser(format!("url: {e}")))?;
+    let port = host.port_or_known_default().unwrap_or(80);
+    let mut stream = tokio::net::TcpStream::connect((host.host_str().unwrap_or("127.0.0.1"), port))
+        .await
+        .map_err(|e| Error::Browser(format!("tcp: {e}")))?;
+    let request = format!(
+        "POST / HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\n\
+         Content-Length: {}\r\nConnection: close\r\n\r\n{}",
+        host.host_str().unwrap_or("localhost"),
+        body.len(),
+        body
+    );
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    stream
+        .write_all(request.as_bytes())
+        .await
+        .map_err(|e| Error::Browser(format!("write: {e}")))?;
+    let mut response = Vec::new();
+    stream
+        .read_to_end(&mut response)
+        .await
+        .map_err(|e| Error::Browser(format!("read: {e}")))?;
+    let text = String::from_utf8_lossy(&response).into_owned();
+    let start = text.find("\r\n\r\n").map(|i| i + 4).unwrap_or(0);
+    Ok(text[start..].to_string())
+}
+
+#[async_trait]
+impl BrowserControl for HttpBrowser {
+    async fn navigate(&self, url: &str) -> Result<String> {
+        self.call("navigate", json!({ "url": url })).await
+    }
+
+    async fn evaluate(&self, expression: &str) -> Result<String> {
+        self.call("evaluate", json!({ "expression": expression })).await
+    }
+
+    async fn screenshot(&self) -> Result<String> {
+        self.call("screenshot", json!({})).await
+    }
+
+    async fn open(&self, url: &str) -> Result<()> {
+        self.call("open", json!({ "url": url })).await.map(|_| ())
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Remote protocol (Android WebView bridge)
 // ---------------------------------------------------------------------------
 

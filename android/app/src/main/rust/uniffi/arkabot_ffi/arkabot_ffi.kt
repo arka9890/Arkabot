@@ -823,6 +823,30 @@ internal open class UniffiVTableCallbackInterfaceEventListener(
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
 
@@ -849,9 +873,13 @@ internal interface UniffiLib : Library {
     ): Unit
     fun uniffi_arkabot_ffi_fn_constructor_arkabothandle_new(`dataDir`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Pointer
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_acp_providers(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_add_quick_action(`ptr`: Pointer,`label`: RustBuffer.ByValue,`prompt`: RustBuffer.ByValue,`icon`: RustBuffer.ByValue,`color`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_agent_messages(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_agent_skills(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_attachment_bytes(`ptr`: Pointer,`attachmentId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -862,6 +890,8 @@ internal interface UniffiLib : Library {
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_channel_reaction(`ptr`: Pointer,`messageId`: RustBuffer.ByValue,`emoji`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_check_provider(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_connect_browser(`ptr`: Pointer,`name`: RustBuffer.ByValue,`baseUrl`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_create_agent(`ptr`: Pointer,`inputJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -877,21 +907,33 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_delete_routine(`ptr`: Pointer,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_delete_skill(`ptr`: Pointer,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_export_agent(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,`targetDir`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_export_data(`ptr`: Pointer,`targetDir`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_files_tree(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_get_agent(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_import_agent(`ptr`: Pointer,`archivePath`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_import_data(`ptr`: Pointer,`sourceDir`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_import_template(`ptr`: Pointer,`templateJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_install_skill(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,`skillId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_list_agents(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_list_channels(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_list_routines(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_list_skills(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_list_skills_for_agent(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_message_reactions(`ptr`: Pointer,`messageId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -907,11 +949,15 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_react(`ptr`: Pointer,`messageId`: RustBuffer.ByValue,`emoji`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_read_skill(`ptr`: Pointer,`id`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_register_listener(`ptr`: Pointer,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_restart_agent(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_save_attachment(`ptr`: Pointer,`name`: RustBuffer.ByValue,`mime`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_save_skill(`ptr`: Pointer,`id`: RustBuffer.ByValue,`content`: RustBuffer.ByValue,`expectedVersion`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_search(`ptr`: Pointer,`query`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -922,6 +968,8 @@ internal interface UniffiLib : Library {
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_settings(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_templates(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_uninstall_skill(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,`skillId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_update_agent(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,`inputJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1049,9 +1097,13 @@ internal interface UniffiLib : Library {
     ): Unit
     fun ffi_arkabot_ffi_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_acp_providers(
+    ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_add_quick_action(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_agent_messages(
+    ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_agent_skills(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_attachment_bytes(
     ): Short
@@ -1062,6 +1114,8 @@ internal interface UniffiLib : Library {
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_channel_reaction(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_check_provider(
+    ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_connect_browser(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_create_agent(
     ): Short
@@ -1077,21 +1131,33 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_delete_routine(
     ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_delete_skill(
+    ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_export_agent(
+    ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_export_data(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_files_tree(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_get_agent(
     ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_import_agent(
+    ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_import_data(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_import_template(
+    ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_install_skill(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_list_agents(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_list_channels(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_list_routines(
+    ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_list_skills(
+    ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_list_skills_for_agent(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_message_reactions(
     ): Short
@@ -1107,11 +1173,15 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_react(
     ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_read_skill(
+    ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_register_listener(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_restart_agent(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_save_attachment(
+    ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_save_skill(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_search(
     ): Short
@@ -1122,6 +1192,8 @@ internal interface UniffiLib : Library {
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_settings(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_templates(
+    ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_uninstall_skill(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_update_agent(
     ): Short
@@ -1156,10 +1228,16 @@ private fun uniffiCheckContractApiVersion(lib: UniffiLib) {
 
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: UniffiLib) {
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_acp_providers() != 22603.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_add_quick_action() != 20125.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_agent_messages() != 36892.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_agent_skills() != 56807.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_attachment_bytes() != 49581.toShort()) {
@@ -1175,6 +1253,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_check_provider() != 10963.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_connect_browser() != 16309.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_create_agent() != 33138.toShort()) {
@@ -1198,6 +1279,12 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_delete_routine() != 52207.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_delete_skill() != 49570.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_export_agent() != 26480.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_export_data() != 36002.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1207,10 +1294,16 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_get_agent() != 36736.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_import_agent() != 6520.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_import_data() != 31241.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_import_template() != 18893.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_install_skill() != 19352.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_list_agents() != 64412.toShort()) {
@@ -1220,6 +1313,12 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_list_routines() != 38813.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_list_skills() != 4748.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_list_skills_for_agent() != 14576.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_message_reactions() != 32624.toShort()) {
@@ -1243,6 +1342,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_react() != 24391.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_read_skill() != 3992.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_register_listener() != 38264.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1250,6 +1352,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_save_attachment() != 63961.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_save_skill() != 59938.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_search() != 63800.toShort()) {
@@ -1265,6 +1370,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_templates() != 56653.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_uninstall_skill() != 53068.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_update_agent() != 1260.toShort()) {
@@ -1627,9 +1735,13 @@ private class JavaLangRefCleanable(
  */
 public interface ArkaBotHandleInterface {
     
+    fun `acpProviders`(): kotlin.String
+    
     fun `addQuickAction`(`label`: kotlin.String, `prompt`: kotlin.String, `icon`: kotlin.String, `color`: kotlin.String): kotlin.String
     
     fun `agentMessages`(`agentId`: kotlin.String, `limit`: kotlin.UInt): kotlin.String
+    
+    fun `agentSkills`(`agentId`: kotlin.String): kotlin.String
     
     fun `attachmentBytes`(`attachmentId`: kotlin.String, `name`: kotlin.String): kotlin.ByteArray
     
@@ -1640,6 +1752,14 @@ public interface ArkaBotHandleInterface {
     fun `channelReaction`(`messageId`: kotlin.String, `emoji`: kotlin.String): kotlin.String
     
     fun `checkProvider`(): kotlin.String
+    
+    /**
+     * Connect the app's WebView bridge to the Rust engine.
+     *
+     * `name` empty registers the shared default browser; a name registers
+     * a profile only the agents naming it can drive.
+     */
+    fun `connectBrowser`(`name`: kotlin.String, `baseUrl`: kotlin.String): kotlin.String
     
     fun `createAgent`(`inputJson`: kotlin.String): kotlin.String
     
@@ -1655,21 +1775,33 @@ public interface ArkaBotHandleInterface {
     
     fun `deleteRoutine`(`id`: kotlin.String): kotlin.String
     
+    fun `deleteSkill`(`id`: kotlin.String): kotlin.String
+    
+    fun `exportAgent`(`agentId`: kotlin.String, `targetDir`: kotlin.String): kotlin.String
+    
     fun `exportData`(`targetDir`: kotlin.String): kotlin.String
     
     fun `filesTree`(`agentId`: kotlin.String): kotlin.String
     
     fun `getAgent`(`agentId`: kotlin.String): kotlin.String
     
+    fun `importAgent`(`archivePath`: kotlin.String): kotlin.String
+    
     fun `importData`(`sourceDir`: kotlin.String): kotlin.String
     
     fun `importTemplate`(`templateJson`: kotlin.String): kotlin.String
+    
+    fun `installSkill`(`agentId`: kotlin.String, `skillId`: kotlin.String): kotlin.String
     
     fun `listAgents`(): kotlin.String
     
     fun `listChannels`(): kotlin.String
     
     fun `listRoutines`(): kotlin.String
+    
+    fun `listSkills`(): kotlin.String
+    
+    fun `listSkillsForAgent`(`agentId`: kotlin.String): kotlin.String
     
     fun `messageReactions`(`messageId`: kotlin.String): kotlin.String
     
@@ -1685,6 +1817,8 @@ public interface ArkaBotHandleInterface {
     
     fun `react`(`messageId`: kotlin.String, `emoji`: kotlin.String): kotlin.String
     
+    fun `readSkill`(`id`: kotlin.String): kotlin.String
+    
     /**
      * Register the Kotlin event listener (replaces any previous one).
      */
@@ -1693,6 +1827,8 @@ public interface ArkaBotHandleInterface {
     fun `restartAgent`(`agentId`: kotlin.String): kotlin.String
     
     fun `saveAttachment`(`name`: kotlin.String, `mime`: kotlin.String, `data`: kotlin.ByteArray): kotlin.String
+    
+    fun `saveSkill`(`id`: kotlin.String, `content`: kotlin.String, `expectedVersion`: kotlin.String?): kotlin.String
     
     fun `search`(`query`: kotlin.String): kotlin.String
     
@@ -1703,6 +1839,8 @@ public interface ArkaBotHandleInterface {
     fun `settings`(): kotlin.String
     
     fun `templates`(): kotlin.String
+    
+    fun `uninstallSkill`(`agentId`: kotlin.String, `skillId`: kotlin.String): kotlin.String
     
     fun `updateAgent`(`agentId`: kotlin.String, `inputJson`: kotlin.String): kotlin.String
     
@@ -1814,6 +1952,19 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     }
 
     
+    @Throws(FfiException::class)override fun `acpProviders`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_acp_providers(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(FfiException::class)override fun `addQuickAction`(`label`: kotlin.String, `prompt`: kotlin.String, `icon`: kotlin.String, `color`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     callWithPointer {
@@ -1833,6 +1984,19 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     uniffiRustCallWithError(FfiException) { _status ->
     UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_agent_messages(
         it, FfiConverterString.lower(`agentId`),FfiConverterUInt.lower(`limit`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(FfiException::class)override fun `agentSkills`(`agentId`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_agent_skills(
+        it, FfiConverterString.lower(`agentId`),_status)
 }
     }
     )
@@ -1898,6 +2062,25 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     uniffiRustCallWithError(FfiException) { _status ->
     UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_check_provider(
         it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Connect the app's WebView bridge to the Rust engine.
+     *
+     * `name` empty registers the shared default browser; a name registers
+     * a profile only the agents naming it can drive.
+     */
+    @Throws(FfiException::class)override fun `connectBrowser`(`name`: kotlin.String, `baseUrl`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_connect_browser(
+        it, FfiConverterString.lower(`name`),FfiConverterString.lower(`baseUrl`),_status)
 }
     }
     )
@@ -1996,6 +2179,32 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     
 
     
+    @Throws(FfiException::class)override fun `deleteSkill`(`id`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_delete_skill(
+        it, FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(FfiException::class)override fun `exportAgent`(`agentId`: kotlin.String, `targetDir`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_export_agent(
+        it, FfiConverterString.lower(`agentId`),FfiConverterString.lower(`targetDir`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(FfiException::class)override fun `exportData`(`targetDir`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     callWithPointer {
@@ -2035,6 +2244,19 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     
 
     
+    @Throws(FfiException::class)override fun `importAgent`(`archivePath`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_import_agent(
+        it, FfiConverterString.lower(`archivePath`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     @Throws(FfiException::class)override fun `importData`(`sourceDir`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     callWithPointer {
@@ -2054,6 +2276,19 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     uniffiRustCallWithError(FfiException) { _status ->
     UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_import_template(
         it, FfiConverterString.lower(`templateJson`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(FfiException::class)override fun `installSkill`(`agentId`: kotlin.String, `skillId`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_install_skill(
+        it, FfiConverterString.lower(`agentId`),FfiConverterString.lower(`skillId`),_status)
 }
     }
     )
@@ -2093,6 +2328,32 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     uniffiRustCallWithError(FfiException) { _status ->
     UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_list_routines(
         it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(FfiException::class)override fun `listSkills`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_list_skills(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(FfiException::class)override fun `listSkillsForAgent`(`agentId`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_list_skills_for_agent(
+        it, FfiConverterString.lower(`agentId`),_status)
 }
     }
     )
@@ -2191,6 +2452,19 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     
 
     
+    @Throws(FfiException::class)override fun `readSkill`(`id`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_read_skill(
+        it, FfiConverterString.lower(`id`),_status)
+}
+    }
+    )
+    }
+    
+
+    
     /**
      * Register the Kotlin event listener (replaces any previous one).
      */override fun `registerListener`(`listener`: EventListener)
@@ -2224,6 +2498,19 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     uniffiRustCallWithError(FfiException) { _status ->
     UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_save_attachment(
         it, FfiConverterString.lower(`name`),FfiConverterString.lower(`mime`),FfiConverterByteArray.lower(`data`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(FfiException::class)override fun `saveSkill`(`id`: kotlin.String, `content`: kotlin.String, `expectedVersion`: kotlin.String?): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_save_skill(
+        it, FfiConverterString.lower(`id`),FfiConverterString.lower(`content`),FfiConverterOptionalString.lower(`expectedVersion`),_status)
 }
     }
     )
@@ -2289,6 +2576,19 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     uniffiRustCallWithError(FfiException) { _status ->
     UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_templates(
         it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+    @Throws(FfiException::class)override fun `uninstallSkill`(`agentId`: kotlin.String, `skillId`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_uninstall_skill(
+        it, FfiConverterString.lower(`agentId`),FfiConverterString.lower(`skillId`),_status)
 }
     }
     )

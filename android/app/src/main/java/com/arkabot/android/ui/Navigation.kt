@@ -6,11 +6,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.arkabot.android.ui.screens.AgentChatScreen
 import com.arkabot.android.ui.screens.AgentEditScreen
+import com.arkabot.android.ui.screens.BrowserScreen
 import com.arkabot.android.ui.screens.ChannelsScreen
 import com.arkabot.android.ui.screens.DashboardScreen
 import com.arkabot.android.ui.screens.EventsScreen
 import com.arkabot.android.ui.screens.RoutinesScreen
 import com.arkabot.android.ui.screens.SettingsScreen
+import com.arkabot.android.ui.screens.SkillsScreen
 import com.arkabot.android.ui.screens.TemplatesScreen
 
 object Routes {
@@ -23,6 +25,8 @@ object Routes {
     const val SETTINGS = "settings"
     const val EVENTS = "events"
     const val TEMPLATES = "templates"
+    const val SKILLS = "skills"
+    const val BROWSER = "browser"
 }
 
 @Composable
@@ -40,6 +44,8 @@ fun ArkaBotNavigation() {
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onOpenEvents = { navController.navigate(Routes.EVENTS) },
                 onOpenTemplates = { navController.navigate(Routes.TEMPLATES) },
+                onOpenSkills = { navController.navigate(Routes.SKILLS) },
+                onOpenBrowser = { navController.navigate(Routes.BROWSER) },
             )
         }
         composable("agent_chat/{agentId}") {
@@ -65,6 +71,12 @@ fun ArkaBotNavigation() {
         }
         composable(Routes.TEMPLATES) {
             TemplatesScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.SKILLS) {
+            SkillsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.BROWSER) {
+            BrowserScreen(onBack = { navController.popBackStack() })
         }
     }
 }

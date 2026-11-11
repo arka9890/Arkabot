@@ -6,7 +6,9 @@
 
 use agent_engine::{AgentEngine, tools as engine_tools};
 use browser::BrowserControl;
-use openbot_core::api::{ChannelMessageView, MessageSender, TurnRunner, TurnTrigger};
+pub mod portability;
+pub mod skills;
+use skills::SkillLibrary;use openbot_core::api::{ChannelMessageView, MessageSender, TurnRunner, TurnTrigger};
 use openbot_core::error::{Error, Result};
 use openbot_core::ids::*;
 use openbot_core::models::*;
@@ -38,6 +40,8 @@ pub struct AgentInput {
     pub max_tool_iterations: u32,
     pub compaction_messages: u32,
     pub busy_mode: BusyMessageMode,
+    /// Named browser profile; empty means the shared default browser.
+    pub browser_profile: String,
     pub capabilities: Vec<Capability>,
 }
 
@@ -55,6 +59,7 @@ impl Default for AgentInput {
             max_tool_iterations: 8,
             compaction_messages: 60,
             busy_mode: BusyMessageMode::default(),
+            browser_profile: String::new(),
             capabilities: vec![
                 Capability::Chat,
                 Capability::Files,
@@ -81,6 +86,8 @@ struct OpenBotInner {
     /// Keeps a privately-owned runtime alive when `OpenBot` is constructed
     /// outside any tokio runtime (the Android FFI case).
     _runtime: Option<tokio::runtime::Runtime>,
+    /// Shared library of reusable `SKILL.md` workflows.
+    skills: SkillLibrary,
 }
 
 impl OpenBot {
@@ -141,6 +148,7 @@ impl OpenBot {
         // Browser control is attached by the platform (Android WebView bridge or
         // desktop Chrome remote debugging) through `set_browser_control`.
 
+        let skills = SkillLibrary::new(data_dir.clone());
         let inner = OpenBotInner {
             db,
             data_dir,
@@ -150,6 +158,7 @@ impl OpenBot {
             routine_scheduler_started: AtomicBool::new(false),
             handle,
             _runtime: owned_runtime,
+            skills,
         };
         Ok(Arc::new(OpenBot {
             inner: Arc::new(inner),
@@ -238,6 +247,7 @@ impl OpenBot {
                 busy_mode: BusyMessageMode::default(),
                 phase: AgentPhase::Idle,
                 workspace_root: String::new(),
+                browser_profile: String::new(),
                 capabilities: vec![
                     Capability::Chat,
                     Capability::Files,
@@ -281,6 +291,26 @@ impl OpenBot {
         self.inner.engine.set_browser(browser);
     }
 
+    /// Register a named browser profile. An agent whose `browser_profile`
+    /// names it drives that browser instead of the shared default.
+    pub fn set_browser_profile(&self, name: &str, browser: Arc<dyn BrowserControl>) {
+        self.inner.engine.set_browser_profile(name, browser);
+    }
+
+    /// Connect to the app's WebView bridge and register it as a browser.
+    ///
+    /// `name` empty registers the shared default; otherwise it registers a
+    /// named profile that only the agents naming it can drive.
+    pub async fn connect_browser(&self, name: &str, base_url: &str) -> Result<()> {
+        let browser = browser::HttpBrowser::new(base_url);
+        if name.trim().is_empty() {
+            self.set_browser_control(Arc::new(browser));
+        } else {
+            self.set_browser_profile(name, Arc::new(browser));
+        }
+        Ok(())
+    }
+
     /// Start the routine scheduler (polls due routines every 30s).
     pub fn start_routine_scheduler(&self) {
         if self.inner.routine_scheduler_started.swap(true, Ordering::SeqCst) {
@@ -316,6 +346,7 @@ impl OpenBot {
             busy_mode: input.busy_mode,
             phase: AgentPhase::Idle,
             workspace_root: format!("agents/{}/workspace", id.as_str()),
+            browser_profile: input.browser_profile,
             capabilities: input.capabilities,
             created_at: now,
             updated_at: now,
@@ -352,6 +383,7 @@ impl OpenBot {
         agent.max_tool_iterations = input.max_tool_iterations;
         agent.compaction_messages = input.compaction_messages;
         agent.busy_mode = input.busy_mode;
+        agent.browser_profile = input.browser_profile;
         agent.capabilities = input.capabilities;
         agent.updated_at = chrono::Utc::now();
         AgentRepository::new(&self.inner.db).update(&agent)?;
@@ -598,6 +630,9 @@ impl OpenBot {
             model: settings.model.clone(),
             temperature: settings.temperature,
             max_tokens: None,
+            acp_command: settings.acp_command.clone(),
+            acp_args: settings.acp_args.clone(),
+            acp_cwd: settings.acp_cwd.clone(),
         };
         let client: Arc<dyn LlmClient> = Arc::from(build_client(&config));
         match client.check().await {
@@ -692,6 +727,113 @@ impl OpenBot {
             model: template.model,
             ..Default::default()
         })
+    }
+
+    // ------- agent import / export -----------------------------------------
+
+    /// Write an agent and its workspace into a zip file inside `target_dir`.
+    ///
+    /// Returns the path of the written archive.
+    pub fn export_agent(&self, agent_id: &AgentId, target_dir: &str) -> Result<String> {
+        let agent = self
+            .agent(agent_id)?
+            .ok_or_else(|| Error::NotFound(format!("agent {}", agent_id)))?;
+        let target = PathBuf::from(target_dir);
+        std::fs::create_dir_all(&target)?;
+        let path = portability::archive_path(&target, &agent.name);
+        let workspace = self.inner.data_dir.join("agents").join(agent_id.as_str()).join("workspace");
+        portability::export_agent_to_zip(&agent, &workspace, &path)?;
+        Ok(path.to_string_lossy().into_owned())
+    }
+
+    /// Rebuild an agent from a zip archive.
+    ///
+    /// The agent gets a new id and its own workspace; the archive's files are
+    /// written into it.
+    pub fn import_agent(&self, archive_path: &str) -> Result<Agent> {
+        let imported = portability::read_agent_zip(&PathBuf::from(archive_path))?;
+        let mut agent = imported.agent;
+        let created = self.create_agent(AgentInput {
+            name: agent.name.clone(),
+            description: agent.description.clone(),
+            avatar: agent.avatar.clone(),
+            avatar_color: agent.avatar_color.clone(),
+            instructions: agent.instructions.clone(),
+            provider: agent.provider.clone(),
+            model: agent.model.clone(),
+            temperature: agent.temperature,
+            max_tool_iterations: agent.max_tool_iterations,
+            compaction_messages: agent.compaction_messages,
+            busy_mode: agent.busy_mode.clone(),
+            browser_profile: agent.browser_profile.clone(),
+            capabilities: agent.capabilities.clone(),
+        })?;
+        for (rel, data) in imported.files {
+            let text = String::from_utf8_lossy(&data).into_owned();
+            self.workspace_write(&created.id, &rel, &text)?;
+        }
+        agent = created;
+        Ok(agent)
+    }
+
+    // ------- ACP providers --------------------------------------------------
+
+    /// The ACP agents the app can drive, with their default commands.
+    pub fn acp_providers(&self) -> Vec<acp::AcpProvider> {
+        acp::providers()
+    }
+
+    // ------- local skills ---------------------------------------------------
+
+    /// Every skill in the shared library.
+    pub fn list_skills(&self) -> Result<Vec<Skill>> {
+        self.inner.skills.list()
+    }
+
+    /// The library skills, each marked with whether `agent_id` has it installed.
+    pub fn list_skills_for_agent(&self, agent_id: &AgentId) -> Result<Vec<Skill>> {
+        self.inner.skills.list_for_agent(agent_id)
+    }
+
+    /// The skills installed for one agent.
+    pub fn agent_skills(&self, agent_id: &AgentId) -> Result<Vec<Skill>> {
+        self.inner.skills.installed(agent_id)
+    }
+
+    /// The full text of one library skill, frontmatter included.
+    pub fn read_skill(&self, id: &str) -> Result<String> {
+        let skill = self.inner.skills.read(id)?;
+        Ok(skills::SkillFile::render(
+            &skills::SkillFrontmatter {
+                name: skill.name,
+                description: skill.description,
+                version: skill.version,
+            },
+            &skill.body,
+        ))
+    }
+
+    /// Create or revise a library skill.
+    ///
+    /// `expected_version` must be the version the caller read; a mismatch is
+    /// rejected so a concurrent edit is not overwritten.
+    pub fn save_skill(&self, id: &str, content: &str, expected_version: Option<&str>) -> Result<Skill> {
+        self.inner.skills.save(id, content, expected_version)
+    }
+
+    /// Remove a skill from the library.
+    pub fn delete_skill(&self, id: &str) -> Result<()> {
+        self.inner.skills.delete(id)
+    }
+
+    /// Install a library skill into an agent's workspace.
+    pub fn install_skill(&self, agent_id: &AgentId, skill_id: &str) -> Result<Skill> {
+        self.inner.skills.install(agent_id, skill_id)
+    }
+
+    /// Remove an installed skill from an agent's workspace.
+    pub fn uninstall_skill(&self, agent_id: &AgentId, skill_id: &str) -> Result<()> {
+        self.inner.skills.uninstall(agent_id, skill_id)
     }
 
     // ------- search --------------------------------------------------------
