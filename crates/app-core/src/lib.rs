@@ -22,7 +22,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use storage::{
     AgentRepository, ChannelRepository, MessageRepository, QueueRepository,
-    QuickActionRepository, SettingsRepository, TemplateRepository, Db,
+    QuickActionRepository, SettingsRepository, TemplateRepository, TurnRepository, Db,
 };
 use tokio::sync::broadcast;
 
@@ -473,6 +473,12 @@ impl OpenBot {
     }
 
     // ------- queue ---------------------------------------------------------
+
+    /// The agent's recent turns, newest first — used by the chat screen to
+    /// show failures ("provider unreachable") instead of silence.
+    pub fn agent_turns(&self, agent_id: &AgentId, limit: usize) -> Result<Vec<Turn>> {
+        TurnRepository::new(&self.inner.db).list_for_agent(agent_id, limit)
+    }
 
     pub fn queue_list(&self, agent_id: &AgentId) -> Result<Vec<QueueItem>> {
         QueueRepository::new(&self.inner.db).list_for_agent(agent_id)

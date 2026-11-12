@@ -140,6 +140,12 @@ impl ArkaBotHandle {
         Ok(ser(&self.inner.agent_messages(&parse_id(&agent_id)?, limit as usize)?))
     }
 
+    /// The agent's recent turns, newest first — lets the chat screen show
+    /// provider failures instead of an empty reply.
+    pub fn agent_turns(&self, agent_id: String, limit: u32) -> FfiResult<String> {
+        Ok(ser(&self.inner.agent_turns(&parse_id(&agent_id)?, limit as usize)?))
+    }
+
     pub fn react(&self, message_id: String, emoji: String) -> FfiResult<String> {
         Ok(ser(&self.inner.react(&MessageId::from_str(&message_id)?, &emoji)?))
     }

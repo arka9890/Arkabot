@@ -816,6 +816,35 @@ impl<'a> TurnRepository<'a> {
             .map_err(|e| Error::Storage(format!("query: {e}")))?;
         Ok(turn)
     }
+
+    /// The agent's most recent turns, newest first.
+    pub fn list_for_agent(&self, agent_id: &AgentId, limit: usize) -> Result<Vec<Turn>> {
+        let conn = self.db.conn();
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, agent_id, status, prompt, started_at, ended_at, error
+                 FROM turns WHERE agent_id=?1 ORDER BY started_at DESC LIMIT ?2",
+            )
+            .map_err(|e| Error::Storage(format!("prepare: {e}")))?;
+        let rows = stmt
+            .query_map(params![agent_id.as_str(), limit as i64], |r| {
+                Ok(Turn {
+                    id: TurnId::from_str(r.get::<_, String>(0)?.as_str()).unwrap_or_default(),
+                    agent_id: AgentId::from_str(r.get::<_, String>(1)?.as_str()).unwrap_or_default(),
+                    status: r.get::<_, String>(2)?.parse().unwrap_or(TurnStatus::Running),
+                    prompt: r.get(3)?,
+                    started_at: r.get(4)?,
+                    ended_at: r.get(5)?,
+                    error: r.get(6)?,
+                })
+            })
+            .map_err(|e| Error::Storage(format!("query: {e}")))?;
+        let mut turns = Vec::new();
+        for row in rows {
+            turns.push(row.map_err(|e| Error::Storage(format!("row: {e}")))?);
+        }
+        Ok(turns)
+    }
 }
 
 // ---------------------------------------------------------------------------

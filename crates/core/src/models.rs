@@ -629,6 +629,8 @@ pub enum EventKind {
     AgentDeleted,
     AgentPhaseChanged,
     TurnStarted,
+    /// A chunk of an in-progress answer, streamed to the UI as it arrives.
+    ChatDelta,
     TurnCompleted,
     TurnFailed,
     MessageAdded,

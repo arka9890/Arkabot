@@ -50,6 +50,10 @@ class ArkaBotRepository(private val handle: ArkaBotHandle) {
     fun updateSettings(settingsJson: String): JSONObject = parseObject(handle.updateSettings(settingsJson))
     fun checkProvider(): JSONObject = parseObject(handle.checkProvider())
 
+    /** The agent's recent turns, newest first — lets the UI surface provider errors. */
+    fun agentTurns(agentId: String, limit: Int = 5): List<JSONObject> =
+        parseArray(handle.agentTurns(agentId, limit.toUInt()))
+
     fun filesTree(agentId: String): JSONObject = parseObject(handle.filesTree(agentId))
     fun workspaceRead(agentId: String, path: String): String = handle.workspaceRead(agentId, path)
     fun workspaceWrite(agentId: String, path: String, content: String) = handle.workspaceWrite(agentId, path, content)

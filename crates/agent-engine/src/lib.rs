@@ -389,16 +389,46 @@ impl AgentEngine {
             request_messages.extend(steered);
 
             let client = self.inner.llm.read().unwrap().clone();
+            let streamed = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+            let streamed_cb = streamed.clone();
+            let events_cb = self.inner.events.clone();
+            let agent_id = agent.id.as_str().to_string();
+            let turn_id = turn.id.as_str().to_string();
+            let mut on_chunk: Box<dyn FnMut(String) + Send> = Box::new(move |chunk: String| {
+                streamed_cb.lock().unwrap().push_str(&chunk);
+                let _ = events_cb.send(AppEvent {
+                    kind: EventKind::ChatDelta,
+                    agent_id: Some(agent_id.clone()),
+                    channel_id: None,
+                    payload: json!({ "turn_id": turn_id.clone(), "delta": chunk }).to_string(),
+                });
+            });
             let response = client
-                .chat(&ChatRequest {
-                    model: model.clone(),
-                    messages: request_messages,
-                    temperature: Some(agent.temperature),
-                    max_tokens: None,
-                    tools: tools.clone(),
-                })
+                .chat_stream(
+                    &ChatRequest {
+                        model: model.clone(),
+                        messages: request_messages,
+                        temperature: Some(agent.temperature),
+                        max_tokens: None,
+                        tools: tools.clone(),
+                    },
+                    &mut on_chunk,
+                )
                 .await;
-
+            // Some providers (ACP, simulated) cannot stream; fall back to a
+            // single delta so the UI still shows progress.
+            if streamed.lock().unwrap().is_empty() {
+                if let Ok(r) = &response {
+                    if !r.content.is_empty() {
+                        self.emit(
+                            EventKind::ChatDelta,
+                            Some(agent.id.as_str().to_string()),
+                            None,
+                            json!({ "turn_id": turn.id.as_str(), "delta": r.content }).to_string(),
+                        );
+                    }
+                }
+            }
             let ChatResponse {
                 content,
                 tool_calls,

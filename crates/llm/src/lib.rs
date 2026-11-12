@@ -194,6 +194,21 @@ impl ProviderConfig {
 pub trait LlmClient: Send + Sync {
     async fn chat(&self, req: &ChatRequest) -> Result<ChatResponse>;
 
+    /// Stream a response chunk-by-chunk. The default implementation calls
+    /// `chat` and emits the whole answer as a single chunk, so providers
+    /// without native streaming still work (the UI just gets one delta).
+    async fn chat_stream<'a>
+        (&'a self,
+         req: &ChatRequest,
+         on_chunk: &'a mut Box<dyn FnMut(String) + Send>,
+    ) -> Result<ChatResponse> {
+        let response = self.chat(req).await?;
+        if !response.content.is_empty() {
+            on_chunk(response.content.clone());
+        }
+        Ok(response)
+    }
+
     /// Cheap liveness check used by settings > provider.
     async fn check(&self) -> Result<ProviderStatus> {
         self.chat(&ChatRequest {
@@ -287,6 +302,141 @@ impl LlmClient for OpenAiClient {
         let value: Value = serde_json::from_str(&text)
             .map_err(|e| Error::Llm(format!("invalid response: {e}")))?;
         parse_chat_response(&value)
+    }
+
+    /// OpenAI-compatible streaming: reads the SSE body line by line and
+    /// forwards each `delta.content` chunk. Falls back to `chat` when the
+    /// server does not support `stream: true`.
+    async fn chat_stream<'a>
+        (&'a self,
+         req: &ChatRequest,
+         on_chunk: &'a mut Box<dyn FnMut(String) + Send>,
+    ) -> Result<ChatResponse> {
+        let mut body = serde_json::json!({
+            "model": req.model,
+            "messages": req.messages,
+            "temperature": req.temperature.unwrap_or(self.config.temperature),
+            "max_tokens": req.max_tokens.or(self.config.max_tokens),
+            "tools": req.tools,
+            "stream": true,
+        });
+
+        let mut http_req = self
+            .http
+            .post(self.config.endpoint())
+            .json(&body);
+        if !self.config.api_key.is_empty() {
+            http_req = http_req.bearer_auth(&self.config.api_key);
+        }
+
+        let resp = http_req.send().await.map_err(|e| {
+            Error::Provider(format!("request failed: {e}"))
+        })?;
+        let status = resp.status();
+        if !status.is_success() {
+            let text = resp.text().await.unwrap_or_default();
+            return Err(Error::Provider(format!(
+                "HTTP {}: {}",
+                status.as_u16(),
+                text.chars().take(500).collect::<String>()
+            )));
+        }
+
+        // The body may still be a non-stream JSON object (older servers);
+        // detect the SSE `data:` prefix and fall back if absent.
+        let content_type = resp
+            .headers()
+            .get("content-type")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("")
+            .to_string();
+        if !content_type.contains("text/event-stream") {
+            let text = resp.text().await.map_err(|e| Error::Provider(format!("body: {e}")))?;
+            let value: Value = serde_json::from_str(&text)
+                .map_err(|e| Error::Llm(format!("invalid response: {e}")))?;
+            return parse_chat_response(&value);
+        }
+
+        let mut stream = resp.bytes_stream();
+        let mut content = String::new();
+        let mut tool_calls: Vec<ToolCall> = Vec::new();
+        let mut finish_reason = String::new();
+        let mut buffer = Vec::new();
+        use futures_util::StreamExt;
+        while let Some(chunk) = stream.next().await {
+            let bytes = chunk.map_err(|e| Error::Provider(format!("stream: {e}")))?;
+            buffer.extend_from_slice(&bytes);
+            // Process complete lines from the buffer.
+            while let Some(pos) = buffer.iter().position(|b| *b == b'\n') {
+                let line: Vec<u8> = buffer.drain(..=pos).collect();
+                let line = String::from_utf8_lossy(&line);
+                let line = line.trim();
+                if line.is_empty() || !line.starts_with("data:") {
+                    continue;
+                }
+                let data = line["data:".len()..].trim();
+                if data == "[DONE]" {
+                    break;
+                }
+                let value: Value = match serde_json::from_str(data) {
+                    Ok(v) => v,
+                    Err(_) => continue,
+                };
+                if let Some(delta) = value.get("choices").and_then(|c| c.get(0)).and_then(|c| c.get("delta")) {
+                    if let Some(text) = delta.get("content").and_then(|c| c.as_str()) {
+                        content.push_str(text);
+                        let chunk = text.to_string();
+                        on_chunk(chunk);
+                    }
+                    if let Some(calls) = delta.get("tool_calls").and_then(|t| t.as_array()) {
+                        for call in calls {
+                            // Streamed tool calls arrive fragmented by index;
+                            // accumulate the arguments.
+                            if let Some(idx) = call.get("index").and_then(|i| i.as_u64()) {
+                                let idx = idx as usize;
+                                if tool_calls.len() <= idx {
+                                    tool_calls.resize(idx + 1, ToolCall {
+                                        id: String::new(),
+                                        kind: "function".into(),
+                                        function: ToolCallFunction {
+                                            name: String::new(),
+                                            arguments: String::new(),
+                                        },
+                                    });
+                                }
+                                if let Some(id) = call.get("id").and_then(|i| i.as_str()) {
+                                    tool_calls[idx].id = id.to_string();
+                                }
+                                if let Some(f) = call.get("function") {
+                                    if let Some(name) = f.get("name").and_then(|n| n.as_str()) {
+                                        tool_calls[idx].function.name = name.to_string();
+                                    }
+                                    if let Some(args) = f.get("arguments").and_then(|a| a.as_str()) {
+                                        tool_calls[idx].function.arguments.push_str(args);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if let Some(reason) = value
+                    .get("choices")
+                    .and_then(|c| c.get(0))
+                    .and_then(|c| c.get("finish_reason"))
+                    .and_then(|r| r.as_str())
+                {
+                    finish_reason = reason.to_string();
+                }
+            }
+        }
+        // Drop empty tool calls (some servers emit a final empty delta).
+        tool_calls.retain(|tc| !tc.function.name.is_empty() || !tc.id.is_empty());
+        Ok(ChatResponse {
+            content,
+            tool_calls,
+            finish_reason: if finish_reason.is_empty() { "stop".into() } else { finish_reason },
+            usage: None,
+        })
     }
 }
 

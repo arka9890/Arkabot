@@ -847,6 +847,8 @@ internal open class UniffiVTableCallbackInterfaceEventListener(
 
 
 
+
+
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
 
@@ -880,6 +882,8 @@ internal interface UniffiLib : Library {
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_agent_messages(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_agent_skills(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_arkabot_ffi_fn_method_arkabothandle_agent_turns(`ptr`: Pointer,`agentId`: RustBuffer.ByValue,`limit`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     fun uniffi_arkabot_ffi_fn_method_arkabothandle_attachment_bytes(`ptr`: Pointer,`attachmentId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1105,6 +1109,8 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_agent_skills(
     ): Short
+    fun uniffi_arkabot_ffi_checksum_method_arkabothandle_agent_turns(
+    ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_attachment_bytes(
     ): Short
     fun uniffi_arkabot_ffi_checksum_method_arkabothandle_channel_action(
@@ -1238,6 +1244,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_agent_skills() != 56807.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_agent_turns() != 4273.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_arkabot_ffi_checksum_method_arkabothandle_attachment_bytes() != 49581.toShort()) {
@@ -1743,6 +1752,12 @@ public interface ArkaBotHandleInterface {
     
     fun `agentSkills`(`agentId`: kotlin.String): kotlin.String
     
+    /**
+     * The agent's recent turns, newest first — lets the chat screen show
+     * provider failures instead of an empty reply.
+     */
+    fun `agentTurns`(`agentId`: kotlin.String, `limit`: kotlin.UInt): kotlin.String
+    
     fun `attachmentBytes`(`attachmentId`: kotlin.String, `name`: kotlin.String): kotlin.ByteArray
     
     fun `channelAction`(`channelId`: kotlin.String, `action`: kotlin.String, `agentId`: kotlin.String?): kotlin.String
@@ -1997,6 +2012,23 @@ open class ArkaBotHandle: Disposable, AutoCloseable, ArkaBotHandleInterface {
     uniffiRustCallWithError(FfiException) { _status ->
     UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_agent_skills(
         it, FfiConverterString.lower(`agentId`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The agent's recent turns, newest first — lets the chat screen show
+     * provider failures instead of an empty reply.
+     */
+    @Throws(FfiException::class)override fun `agentTurns`(`agentId`: kotlin.String, `limit`: kotlin.UInt): kotlin.String {
+            return FfiConverterString.lift(
+    callWithPointer {
+    uniffiRustCallWithError(FfiException) { _status ->
+    UniffiLib.INSTANCE.uniffi_arkabot_ffi_fn_method_arkabothandle_agent_turns(
+        it, FfiConverterString.lower(`agentId`),FfiConverterUInt.lower(`limit`),_status)
 }
     }
     )
