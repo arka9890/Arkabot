@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,8 +32,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.arkabot.android.data.ArkaBotViewModel
 import com.arkabot.android.ui.ArkaBotNavigation
 import com.arkabot.android.ui.theme.ArkaBotTheme
+import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,7 +63,16 @@ class MainActivity : ComponentActivity() {
             else -> null
         }
         setContent {
-            ArkaBotTheme {
+            val viewModel: ArkaBotViewModel = viewModel()
+            val settings by viewModel.settings.collectAsState()
+            val appearance = settings.optString("appearance", "system")
+            val isSystemDark = isSystemInDarkTheme()
+            val darkTheme = when (appearance) {
+                "dark" -> true
+                "light" -> false
+                else -> isSystemDark
+            }
+            ArkaBotTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

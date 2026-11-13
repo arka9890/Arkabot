@@ -137,6 +137,10 @@ class ArkaBotViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun queuePause(agentId: String) = launchIO { repo.queuePause(agentId) }
+    fun queueResume(agentId: String) = launchIO { repo.queueResume(agentId) }
+    fun queueCancel(itemId: String) = launchIO { repo.queueCancel(itemId) }
+
     fun agentMessages(agentId: String): List<JSONObject> {
         return runBlockingIO { repo.agentMessages(agentId) }
     }
