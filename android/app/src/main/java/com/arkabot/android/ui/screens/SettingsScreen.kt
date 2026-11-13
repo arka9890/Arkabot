@@ -25,6 +25,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
     var model by remember { mutableStateOf("") }
     var temperature by remember { mutableStateOf("0.7") }
     var demoMode by remember { mutableStateOf(true) }
+    var appearance by remember { mutableStateOf("system") }
 
     LaunchedEffect(settings) {
         provider = settings.optString("provider", "simulated")
@@ -33,6 +34,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
         model = settings.optString("model", "")
         temperature = settings.optDouble("temperature", 0.7).toString()
         demoMode = settings.optBoolean("demo_mode", true)
+        appearance = settings.optString("appearance", settings.optString("theme", "system"))
     }
 
     Scaffold(
@@ -123,6 +125,29 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
             )
             Spacer(Modifier.height(16.dp))
 
+            Text("Appearance", fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            Text("Theme", style = MaterialTheme.typography.labelLarge)
+            FilterChip(
+                selected = appearance == "light",
+                onClick = { appearance = "light" },
+                label = { Text("Light") }
+            )
+            Spacer(Modifier.width(8.dp))
+            FilterChip(
+                selected = appearance == "dark",
+                onClick = { appearance = "dark" },
+                label = { Text("Dark") }
+            )
+            Spacer(Modifier.width(8.dp))
+            FilterChip(
+                selected = appearance == "system",
+                onClick = { appearance = "system" },
+                label = { Text("System") }
+            )
+
+            Spacer(Modifier.height(16.dp))
+
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Text("Demo Mode")
                 Spacer(Modifier.weight(1f))
@@ -149,7 +174,7 @@ fun SettingsScreen(onBack: () -> Unit, viewModel: ArkaBotViewModel = viewModel()
                         put("api_key", apiKey)
                         put("model", model)
                         put("temperature", temperature.toDoubleOrNull() ?: 0.7)
-                        put("theme", "system")
+                        put("appearance", appearance)
                         put("busy_mode", "queue")
                         put("demo_mode", demoMode)
                     }.toString()

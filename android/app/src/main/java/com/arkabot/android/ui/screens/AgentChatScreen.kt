@@ -97,6 +97,18 @@ fun AgentChatScreen(agentId: String, onBack: () -> Unit, viewModel: ArkaBotViewM
                     Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White)
                 }
             }
+
+            // Queue controls row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(onClick = { viewModel.queuePause(agentId) }) { Text("Pause") }
+                Button(onClick = { viewModel.queueResume(agentId) }) { Text("Resume") }
+            }
         }
     }
 }
