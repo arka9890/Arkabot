@@ -116,7 +116,7 @@ fn verify_rest(app: &Arc<OpenBot>, rt: &tokio::runtime::Runtime) {
         }
     }
     // The exact payload SettingsScreen builds (minus unrelated fields).
-    let exact = r#"{"provider":"lmstudio","base_url":"http://10.0.2.2:11434","api_key":"","model":"qwen3","temperature":0.7,"theme":"system","busy_mode":"queue","demo_mode":false}"#;
+    let exact = r#"{"provider":"lmstudio","base_url":"http://10.0.2.2:11434","api_key":"","model":"qwen3","temperature":0.7,"appearance":"system","busy_mode":"queue","demo_mode":false}"#;
     match serde_json::from_str::<openbot_core::models::AppSettings>(exact) {
         Ok(_) => println!("RESULT 7: full SettingsScreen payload -> ok"),
         Err(e) => println!("RESULT 7: full SettingsScreen payload -> PARSE FAILED: {e}"),

@@ -514,7 +514,9 @@ pub struct AppSettings {
     pub api_key: String,
     pub model: String,
     pub temperature: f32,
-    pub theme: ThemeMode,
+    /// Backward-compatible alias: old saved settings use the `"theme"` key.
+    #[serde(alias = "theme")]
+    pub appearance: ThemeMode,
     pub busy_mode: BusyMessageMode,
     /// Simulated provider mode: true lets agents answer without a model server.
     pub demo_mode: bool,
@@ -528,7 +530,7 @@ impl Default for AppSettings {
             api_key: String::new(),
             model: String::new(),
             temperature: 0.7,
-            theme: ThemeMode::System,
+            appearance: ThemeMode::System,
             busy_mode: BusyMessageMode::Queue,
             // First launch runs in demo mode, no server required.
             demo_mode: true,
