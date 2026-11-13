@@ -117,6 +117,5 @@ dependencies {
 }
 
 tasks.named("preBuild") {
-    dependsOn("uniffiKotlin")
     dependsOn("rustBuild")
 }
