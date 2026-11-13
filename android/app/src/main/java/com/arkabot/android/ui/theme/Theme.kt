@@ -21,9 +21,6 @@ private val DarkColors = darkColorScheme(
     onTertiary = Color(0xFF1A1B26),
     outline = Color(0xFF414868),
     error = Color(0xFFF7768E),
-    success = Color(0xFF9CE6A),
-    warning = Color(0xFFE0AF68),
-    danger = Color(0xFFF7768E),
 )
 
 private val LightColors = lightColorScheme(
@@ -40,9 +37,6 @@ private val LightColors = lightColorScheme(
     onTertiary = Color(0xFFFFFFFF),
     outline = Color(0xFF414868),
     error = Color(0xFFF7768E),
-    success = Color(0xFF9CE6A),
-    warning = Color(0xFFE0AF68),
-    danger = Color(0xFFF7768E),
 )
 
 @Composable

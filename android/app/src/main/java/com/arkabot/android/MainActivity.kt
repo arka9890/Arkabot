@@ -64,8 +64,8 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             val viewModel: ArkaBotViewModel = viewModel()
-            val settings by viewModel.settings.collectAsState()
-            val appearance = settings.optString("appearance", "system")
+            val settings = viewModel.settings.collectAsState()
+            val appearance = settings.value.optString("appearance", "system")
             val isSystemDark = isSystemInDarkTheme()
             val darkTheme = when (appearance) {
                 "dark" -> true
